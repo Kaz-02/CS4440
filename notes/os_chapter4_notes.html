@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 4 — スレッド</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700;900&family=JetBrains+Mono:wght@400;600&display=swap');
+:root{
+  --bg:#f7f5f0;--s1:#ffffff;--s2:#f0ede6;--border:#ddd8ce;
+  --ink:#18150e;--muted:#8c8070;
+  --a1:#d45a1a;--a2:#1a6db5;--a3:#1a9456;--a4:#8a3ab5;--a5:#b5941a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Zen Kaku Gothic New',sans-serif;line-height:1.75;padding:2.5rem 1rem 5rem}
+.wrap{max-width:900px;margin:0 auto}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* Header */
+header{margin-bottom:2.8rem;padding-bottom:1.4rem;border-bottom:2.5px solid var(--ink);animation:fadeUp .5s ease both}
+.ch-label{font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-bottom:.4rem}
+header h1{font-size:2rem;font-weight:900;line-height:1.2}
+header h1 span{color:var(--a2)}
+header p{font-size:.88rem;color:var(--muted);margin-top:.4rem}
+
+/* Big idea */
+.big-idea{background:linear-gradient(135deg,#edf5ff,#f5eeff);border:1px solid #c0d0f0;border-radius:10px;padding:1.2rem 1.6rem;margin-bottom:2.8rem;animation:fadeUp .5s ease .06s both}
+.big-idea .lbl{font-family:'JetBrains Mono',monospace;font-size:.65rem;letter-spacing:.15em;color:var(--a2);text-transform:uppercase;margin-bottom:.4rem}
+.big-idea p{font-size:.95rem;color:#2a3050}
+
+/* Section */
+.section{margin-bottom:1.6rem;animation:fadeUp .4s ease both}
+.sh{display:flex;align-items:center;gap:.75rem;padding:.95rem 1.2rem;background:var(--s1);border:1px solid var(--border);border-radius:8px 8px 0 0;cursor:pointer;user-select:none;transition:background .15s}
+.sh:hover{background:var(--s2)}.sh.open{border-bottom:none}
+.sh-icon{font-size:1.1rem;flex-shrink:0}
+.sh h2{flex:1;font-size:.95rem;font-weight:700}
+.stag{font-family:'JetBrains Mono',monospace;font-size:.62rem;padding:.13rem .5rem;border-radius:20px;border:1px solid;letter-spacing:.05em;font-weight:600;flex-shrink:0}
+.t1{color:var(--a1);border-color:var(--a1);background:#fff2ec}
+.t2{color:var(--a2);border-color:var(--a2);background:#ecf3ff}
+.t3{color:var(--a3);border-color:var(--a3);background:#ecfff3}
+.t4{color:var(--a4);border-color:var(--a4);background:#f5ecff}
+.t5{color:var(--a5);border-color:var(--a5);background:#fffaec}
+.tog{color:var(--muted);font-size:.75rem;transition:transform .25s}
+.sh.open .tog{transform:rotate(180deg)}
+.sb{display:none;padding:1.3rem 1.4rem;background:var(--s1);border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px}
+.sb.open{display:block}
+
+/* Content */
+.ct{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--a2);letter-spacing:.06em;margin-bottom:.3rem;margin-top:.9rem}
+.ct:first-child{margin-top:0}
+.cp{font-size:.9rem;color:#3a3428;line-height:1.7}
+hr{border:none;border-top:1px solid var(--border);margin:1rem 0}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin-top:.7rem}
+.cols3{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;margin-top:.7rem}
+.card{background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:.9rem 1rem}
+.card .lb{font-family:'JetBrains Mono',monospace;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem;font-weight:600}
+.card p{font-size:.85rem;color:#5a5040}
+.k1{color:var(--a1);font-weight:700}.k2{color:var(--a2);font-weight:700}.k3{color:var(--a3);font-weight:700}.k4{color:var(--a4);font-weight:700}.k5{color:var(--a5);font-weight:700}
+.tags{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.55rem}
+.tag{background:var(--s2);border:1px solid var(--border);border-radius:20px;padding:.16rem .65rem;font-size:.76rem;color:var(--muted)}
+.quote{border-left:3px solid var(--a2);padding:.5rem 1rem;background:#f0f5ff;border-radius:0 6px 6px 0;font-size:.88rem;color:#1a3060;margin:.8rem 0;font-style:italic}
+code{font-family:'JetBrains Mono',monospace;font-size:.82rem;background:var(--s2);padding:.05rem .32rem;border-radius:3px;color:var(--a1)}
+
+/* Thread anatomy visual */
+.thread-compare{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:.8rem}
+.tc-box{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.tc-title{font-size:.82rem;font-weight:700;text-align:center;padding:.45rem;background:var(--s2);border-bottom:1px solid var(--border)}
+.tc-thread{padding:.7rem .9rem;display:flex;gap:.5rem;border-bottom:1px solid var(--border)}
+.tc-thread:last-child{border-bottom:none}
+.tc-private{background:#fff2ec;border:1px solid #f0c8a8;border-radius:5px;padding:.25rem .55rem;font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--a1);flex-shrink:0}
+.tc-shared{background:#ecf3ff;border:1px solid #a8c0f0;border-radius:5px;padding:.25rem .55rem;font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--a2)}
+.tc-shared-row{padding:.7rem .9rem;background:#ecf3ff}
+
+/* Concurrency vs Parallelism visual */
+.cvp{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:.8rem}
+.cvp-box{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.cvp-title{font-size:.82rem;font-weight:700;padding:.5rem .9rem;border-bottom:1px solid var(--border)}
+.cvp-row{display:flex;gap:.3rem;padding:.5rem .9rem;align-items:center;font-family:'JetBrains Mono',monospace;font-size:.7rem}
+.core-label{color:var(--muted);font-size:.68rem;min-width:50px}
+.t-block{height:22px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;color:white;flex-shrink:0}
+.tb1{background:#d45a1a}.tb2{background:#1a6db5}.tb3{background:#1a9456}.tb4{background:#8a3ab5}
+
+/* 4 pillars */
+.pillars{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-top:.7rem}
+.pillar{border-radius:8px;padding:.9rem 1rem;border:1px solid}
+.p-resp{background:#fff5ec;border-color:#f0c090}.p-res{background:#ecf3ff;border-color:#90b8e8}
+.p-eco{background:#ecfff0;border-color:#90d0a8}.p-scal{background:#f5ecff;border-color:#c090e0}
+.pillar .pt{font-weight:700;font-size:.9rem;margin-bottom:.35rem}
+.p-resp .pt{color:var(--a1)}.p-res .pt{color:var(--a2)}.p-eco .pt{color:var(--a3)}.p-scal .pt{color:var(--a4)}
+.pillar p{font-size:.84rem;color:#4a4038}
+
+/* Mapping models */
+.models{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;margin-top:.8rem}
+.mcard{border-radius:8px;padding:.9rem 1rem;border:1px solid}
+.m1{background:#fff5ec;border-color:#f0c090}.m2{background:#ecf3ff;border-color:#90b8e8}.m3{background:#f5ecff;border-color:#c090e0}
+.mcard .mt{font-weight:700;font-size:.88rem;margin-bottom:.35rem}
+.m1 .mt{color:var(--a1)}.m2 .mt{color:var(--a2)}.m3 .mt{color:var(--a4)}
+.mcard p{font-size:.82rem;color:#4a4038;margin-bottom:.4rem}
+.pro{color:var(--a3);font-size:.78rem}.con{color:var(--a1);font-size:.78rem}
+
+/* Amdahl */
+.amdahl-box{background:linear-gradient(135deg,#fff8ec,#fffaec);border:1px solid #e0c888;border-radius:8px;padding:1rem 1.2rem;margin-top:.8rem}
+.formula{font-family:'JetBrains Mono',monospace;font-size:.95rem;color:var(--ink);background:var(--s2);display:inline-block;padding:.4rem .8rem;border-radius:5px;margin:.5rem 0}
+
+/* Thread libs */
+.libs{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;margin-top:.8rem}
+.lib-card{border-radius:8px;padding:.9rem 1rem;border:1px solid}
+.lc1{background:#ecfff3;border-color:#90d0a8}.lc2{background:#ecf3ff;border-color:#90b8e8}.lc3{background:#fff5ec;border-color:#f0c090}
+.lib-card .lt{font-weight:700;font-size:.88rem;margin-bottom:.35rem}
+.lc1 .lt{color:var(--a3)}.lc2 .lt{color:var(--a2)}.lc3 .lt{color:var(--a5)}
+.lib-card p{font-size:.82rem;color:#4a4038}
+.lib-card code{display:block;margin-top:.5rem;font-size:.72rem;padding:.4rem .6rem;white-space:pre}
+
+/* Cancellation */
+.cancel-cols{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin-top:.8rem}
+.cc-bad{background:#fff2ec;border:1px solid #f0b090;border-radius:8px;padding:.9rem 1rem}
+.cc-good{background:#ecfff3;border:1px solid #90d0a8;border-radius:8px;padding:.9rem 1rem}
+.cc-bad .ct2{color:var(--a1);font-weight:700;font-size:.88rem;margin-bottom:.4rem}
+.cc-good .ct2{color:var(--a3);font-weight:700;font-size:.88rem;margin-bottom:.4rem}
+
+/* OS impl */
+.os-cols{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin-top:.8rem}
+
+@media(max-width:600px){
+  .cols2,.cols3,.pillars,.models,.libs,.cancel-cols,.os-cols,.cvp,.thread-compare{grid-template-columns:1fr}
+  header h1{font-size:1.6rem}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="ch-label">Chapter 4 — 学習ノート</div>
+  <h1>スレッド：<span>並列処理の最小単位</span></h1>
+  <p>プロセスを「分割」して並列に動かす仕組みを、基礎から実装まで理解する</p>
+</header>
+
+<div class="big-idea">
+  <div class="lbl">💡 この章の核心</div>
+  <p>過去のCPU高速化は「クロック速度を上げる」ことで実現した。しかし現代は<span class="k2">マルチコア</span>の時代。1プロセス内に複数の<span class="k2">スレッド</span>を持ち、複数コアで並列実行することが性能向上の鍵となる。<br>スレッドはプロセスより軽量で、コード・データ・ファイルを共有しながら独立して動く「軽量な実行の流れ」だ。</p>
+</div>
+
+<!-- 1. スレッドとは -->
+<div class="section" style="animation-delay:.05s">
+  <div class="sh open" onclick="toggle(this)">
+    <span class="sh-icon">🧵</span>
+    <h2>スレッドとは何か：プロセスの中の軽量な実行単位</h2>
+    <span class="stag t2">CONCEPT</span>
+    <span class="tog">▼</span>
+  </div>
+  <div class="sb open">
+    <div class="cp">スレッドは <span class="k2">CPUを使う基本単位</span>。1つのプロセス内に複数のスレッドが共存できる。</div>
+    <div class="thread-compare" style="margin-top:.8rem">
+      <div class="tc-box">
+        <div class="tc-title">シングルスレッド プロセス</div>
+        <div class="tc-thread">
+          <span class="tc-private">PC</span>
+          <span class="tc-private">Stack</span>
+          <span class="tc-private">Registers</span>
+        </div>
+        <div class="tc-shared-row"><span class="tc-shared">Code / Data / Files（共有）</span></div>
+      </div>
+      <div class="tc-box">
+        <div class="tc-title">マルチスレッド プロセス</div>
+        <div class="tc-thread">
+          <span class="tc-private">PC</span><span class="tc-private">Stack</span><span class="tc-private">Reg</span>
+          <span style="color:var(--muted);font-size:.7rem;align-self:center">×3</span>
+        </div>
+        <div class="tc-shared-row"><span class="tc-shared">Code / Data / Files（全スレッドで共有）</span></div>
+      </div>
+    </div>
+    <hr>
+    <div class="cols2">
+      <div>
+        <div class="ct">スレッドが各自で持つもの（Private）</div>
+        <div class="tags">
+          <span class="tag">Thread ID</span>
+          <span class="tag">Program Counter（次の命令アドレス）</span>
+          <span class="tag">Register Set（レジスタのスナップショット）</span>
+          <span class="tag">Stack（関数呼び出し・ローカル変数）</span>
+        </div>
+      </div>
+      <div>
+        <div class="ct">同じプロセスのスレッドで共有するもの（Shared）</div>
+        <div class="tags">
+          <span class="tag">Code Section（コード本体）</span>
+          <span class="tag">Data Section（グローバル変数）</span>
+          <span class="tag">Heap（動的確保メモリ）</span>
+          <span class="tag">Open Files・デバイス</span>
+        </div>
+      </div>
+    </div>
+    <div class="quote">Heapは全スレッドで共有される。データ共有は簡単だが、同時アクセスによる競合（Race Condition）を防ぐため同期が必要。</div>
+  </div>
+</div>
+
+<!-- 2. 4つの利点 -->
+<div class="section" style="animation-delay:.1s">
+  <div class="sh" onclick="toggle(this)">
+    <span class="sh-icon">🏆</span>
+    <h2>マルチスレッドの4つの柱（利点）</h2>
+    <span class="stag t1">BENEFITS</span>
+    <span class="tog">▼</span>
+  </div>
+  <div class="sb">
+    <div class="pillars">
+      <div class="pillar p-resp">
+        <div class="pt">① Responsiveness（応答性）</div>
+        <p>処理の一部がブロックされても他のスレッドが動き続ける。例：ワードプロセッサで1スレッドがキー入力を処理しながら、別スレッドがスペルチェック。シングルスレッドなら全体が固まる。</p>
+      </div>
+      <div class="pillar p-res">
+        <div class="pt">② Resource Sharing（リソース共有）</div>
+        <p>スレッドは親プロセスのメモリ・リソースをデフォルトで共有する。プロセス間通信は明示的なIPC（共有メモリやパイプ等）が必要だが、スレッド間は同じアドレス空間を直接使える。</p>
+      </div>
+      <div class="pillar p-eco">
+        <div class="pt">③ Economy（経済性）</div>
+        <p>スレッドの生成・コンテキストスイッチはプロセスより低コスト。リソースを共有するため作成に必要な時間・メモリが少なく、スイッチも高速。</p>
+      </div>
+      <div class="pillar p-scal">
+        <div class="pt">④ Scalability（スケーラビリティ）</div>
+        <p>マルチコアCPUで複数スレッドが本当に同時並列実行できる。シングルスレッドプロセスは何コアあっても1コアしか使えない。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 3. 並行 vs 並列 -->
+<div class="section" style="animation-delay:.15s">
+  <div class="sh" onclick="toggle(this)">
+    <span class="sh-icon">⚡</span>
+    <h2>並行性（Concurrency）≠ 並列性（Parallelism）</h2>
+    <span class="stag t3">CORE CONCEPT</span>
+    <span class="tog">▼</span>
+  </div>
+  <div class="sb">
+    <div class="cvp">
+      <div class="cvp-box">
+        <div class="cvp-title" style="background:#fff5ec;color:var(--a1)">並行性（Concurrency） — シングルコア</div>
+        <div class="cvp-row">
+          <span class="core-label">Core 1</span>
+          <div class="t-block tb1" style="width:38px">T1</div>
+          <div class="t-block tb2" style="width:38px">T2</div>
+          <div class="t-block tb3" style="width:38px">T3</div>
+          <div class="t-block tb1" style="width:38px">T1</div>
+          <div class="t-block tb2" style="width:38px">T2</div>
+        </div>
+        <div style="padding:.4rem .9rem .7rem;font-size:.8rem;color:var(--muted)">高速に切り替え→同時実行の<em>錯覚</em>を生む</div>
+      </div>
+      <div class="cvp-box">
+        <div class="cvp-title" style="background:#ecf3ff;color:var(--a2)">並列性（Parallelism） — マルチコア</div>
+        <div class="cvp-row">
+          <span class="core-label">Core 1</span>
+          <div class="t-block tb1" style="width:90px">T1</div>
+          <div class="t-block tb3" style="width:90px">T3</div>
+        </div>
+        <div class="cvp-row">
+          <span class="core-label">Core 2</span>
+          <div class="t-block tb2" style="width:90px">T2</div>
+          <div class="t-block tb4" style="width:90px">T4</div>
+        </div>
+        <div style="padding:.4rem .9rem .7rem;font-size:.8rem;color:var(--muted)">本当に<em>同時</em>に複数のタスクが動く</div>
+      </div>
+    </div>
+    <div class="cols2" style="margin-top:.8rem">
+      <div class="card">
+        <div class="lb" style="color:var(--a1)">並行性（Concurrency）</div>
+        <p>複数タスクが<span class="k1">進捗できる</span>状態。「多くのことを一度に<em>さばく</em>」。シングルコアでも可能。インターリービング（時分割）で実現。</p>
+      </div>
+      <div class="card">
+        <div class="lb" style="color:var(--a2)">並列性（Parallelism）</div>
+        <p>複数タスクが<span class="k2">本当に同時実行</span>される状態。「多くのことを一度に<em>やる</em>」。<strong>マルチコアが必須</strong>。並行なしの並列はない。</p>
+      </div>
+    </div>
+    <hr>
+    <div class="ct">並列性の2種類</div>
+    <div class="cols2">
+      <div class="card">
+        <div class="lb" style="color:var(--a3)">データ並列性（Data Parallelism）</div>
+        <p>同じ操作を<span class="k3">データのサブセットに分けて</span>複数コアで実行。例：1億件の配列を4コアで4等分して同じ計算。</p>
+      </div>
+      <div class="card">
+        <div class="lb" style="color:var(--a4)">タスク並列性（Task Parallelism）</div>
+        <p><span class="k4">異なる処理</span>を複数コアに振り分けて並列実行。例：Core1がUI処理、Core2がI/O処理を同時に担当。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 4. Amdahl's Law -->
+<div class="section" style="animation-delay:.2s">
+  <div class="sh" onclick="toggle(this)">
+    <span class="sh-icon">📐</span>
+    <h2>アムダールの法則：並列化の理論的上限</h2>
+    <span class="stag t5">AMDAHL'S LAW</span>
+    <span class="tog">▼</span>
+  </div>
+  <div class="sb">
+    <div class="amdahl-box">
+      <div class="ct" style="margin-top:0">公式</div>
+      <div class="formula">Speedup ≤ 1 / ( S + (1-S)/N )</div>
+      <div style="margin-top:.5rem;font-size:.87rem;color:#5a4a18">
+        <strong>S</strong> = プログラム中の直列（シリアル）部分の割合<br>
+        <strong>N</strong> = 処理コア数<br>
+        <strong>Nが∞に近づくと：</strong>スピードアップは <strong>1/S</strong> に収束
+      </div>
+    </div>
+    <div class="cols2" style="margin-top:.8rem">
+      <div class="card">
+        <div class="lb" style="color:var(--a5)">具体例</div>
+        <p>S = 25%（直列部分が1/4）の場合：<br>コアをいくら増やしても最大 <span class="k5">4倍</span>（= 1/0.25）にしかならない。<br>S = 50% → 最大2倍。</p>
+      </div>
+      <div class="card">
+        <div class="lb" style="color:var(--a1)">重要な教訓</div>
+        <p><span class="k1">直列部分がボトルネック</span>。並列化の恩恵を最大化するには、直列部分を可能な限り小さくすることが鍵。コア数を増やすだけでは限界がある。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 5. マルチコアプログラミングの5つの課題 -->
+<div class="section" style="animation-delay:.25s">
+  <div class="sh" onclick="toggle(this)">
+    <span class="sh-icon">⚠️</span>
+    <h2>マルチコアプログラミングの5つの課題</h2>
+    <span class="stag t1">CHALLENGES</span>
+    <span class="tog">▼</span>
+  </div>
+  <div class="sb">
+    <div class="tags" style="gap:.6rem">
+      <span class="tag">① <strong>タスクの識別</strong>：並列化できる処理を見つける</span>
+      <span class="tag">② <strong>バランス</strong>：各スレッドに均等な量の仕事を割り当てる</span>
+      <span class="tag">③ <strong>データ分割</strong>：データを複数コアに分散させる方法</span>
+      <span class="tag">④ <strong>データ依存性</strong>：順序依存のある処理を同期させる</span>
+      <span class="tag">⑤ <strong>テスト・デバッグ</strong>：実行パスが膨大になり再現が困難</span>
+    </div>
+  </div>
+</div>
+
+<!-- 6. ユーザースレッド vs カーネルスレッド -->
+<div class="section" style="animation-delay:.3s">
+  <div class="sh" onclick="toggle(this)">
+    <span class="sh-icon">🔀</span>
+    <h2>ユーザースレッド vs カーネルスレッド：3つのマッピングモデル</h2>
+    <span class="stag t4">THREADING MODELS</span>
+    <span class="tog">▼</span>
+  </div>
+  <div class="sb">
+    <div class="cp">ユーザースレッドがCPU上で実際に動くには、<span class="k4">カーネルスレッドへのマッピングが必要</span>。</div>
+    <div class="cols2" style="margin-top:.7rem">
+      <div class="card">
+        <div class="lb" style="color:var(--a2)">ユーザースレッド（User-level）</div>
+        <p>ユーザー空間のスレッドライブラリが管理。切り替えが速くカーネル不介在。しかしカーネルは存在を知らない。例：Javaの旧Green Threads</p>
+      </div>
+      <div class="card">
+        <div class="lb" style="color:var(--a4)">カーネルスレッド（Kernel-level）</div>
+        <p>OS（カーネル）が直接管理・スケジューリング。物理プロセッサへの真のマルチタスクをサポート。例：Windows Threads、Linux/POSIX Pthreads</p>
+      </div>
+    </div>
+    <div class="models">
+      <div class="mcard m1">
+        <div class="mt">① Many-to-One</div>
+        <p>多数のユーザースレッド → 1つのカーネルスレッド。管理は効率的。</p>
+        <div class="pro">✓ スレッド管理が高速</div>
+        <div class="con">✗ 1つがブロックすると全体がブロック<br>✗ マルチコアで並列実行不可</div>
+      </div>
+      <div class="mcard m2">
+        <div class="mt">② One-to-One ★現代の標準</div>
+        <p>ユーザースレッド1つ → カーネルスレッド1つ。最も広く使われる。例：Linux、Windows</p>
+        <div class="pro">✓ ブロックが全体に波及しない<br>✓ マルチコアで真の並列実行可能</div>
+        <div class="con">✗ スレッド作成のたびにカーネルスレッドも作成→オーバーヘッド</div>
+      </div>
+      <div class="mcard m3">
+        <div class="mt">③ Many-to-Many</div>
+        <p>多数のユーザースレッド → 同数以下のカーネルスレッドに多重化。</p>
+        <div class="pro">✓ ブロックが全体に波及しない<br>✓ 大量のユーザースレッドを柔軟に管理</div>
+        <div class="con">✗ 実装が複雑</div>
+      </div>
+    </div>
+    <div class="quote" style="margin-top:.8rem">コア数増加に伴い「カーネルスレッド数を制限する必要性」が低下。現代のOSはほぼ<strong>One-to-Oneモデル</strong>（Linux・Windows）を採用。</div>
+  </div>
+</div>
+
+<!-- 7. スレッドライブラリ -->
+<div class="section" style="animation-delay:.35s">
+  <div class="sh" onclick="toggle(this)">
+    <span class="sh-icon">📚</span>
+    <h2>スレッドライブラリ「ビッグ3」：明示的スレッド管理</h2>
+    <span class="stag t3">THREAD LIBS</span>
+    <span class="tog">▼</span>
+  </div>
+  <div class="sb">
+    <div class="libs">
+      <div class="lib-card lc1">
+        <div class="lt">POSIX Pthreads</div>
+        <p>IEEE 1003.1c仕様。<strong>実装ではなく動作の仕様を定義</strong>。UNIX/Linux/macOSで標準的。</p>
+        <code>pthread_create(&tid, &attr,
+  runner, argv[1]);</code>
+      </div>
+      <div class="lib-card lc2">
+        <div class="lt">Windows Threads</div>
+        <p>カーネルレベルのライブラリ。明示的なハンドルと重いデータ構造。<code>windows.h</code>と直接連携。</p>
+        <code>CreateThread(NULL, 0,
+  Summation, &Param,
+  0, &Id);</code>
+      </div>
+      <div class="lib-card lc3">
+        <div class="lt">Java Threads</div>
+        <p>JVMが管理。ホストOSのスレッドの上で動作。<code>Runnable</code>インターフェースまたはLambdaで実装。</p>
+        <code>Thread worker =
+  new Thread(new Task());
+worker.start();</code>
+      </div>
+    </div>
+    <div class="quote" style="margin-top:.8rem">JVMはホストOSのスレッドライブラリを内部で使用。WindowsではWindows API、Unix/Linux/macOSではPthreadsを利用。</div>
+    <hr>
+    <div class="ct">同期 vs 非同期スレッド戦略</div>
+    <div class="cols2">
+      <div class="card">
+        <div class="lb" style="color:var(--a2)">同期スレッド（Synchronous）— Fork-Join</div>
+        <p>親スレッドが子を生成し、<span class="k2">全子スレッドの終了を待ってから</span>処理を再開。スレッド間のデータ共有が多い場合に使用。<code>pthread_join()</code> / <code>worker.join()</code></p>
+      </div>
+      <div class="card">
+        <div class="lb" style="color:var(--a3)">非同期スレッド（Asynchronous）</div>
+        <p>親は子を生成後、<span class="k3">待たずにすぐ処理を継続</span>。親子が並行して独立に動く。データ共有は少ない。マルチスレッドWebサーバーで典型的に使用。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 8. 暗黙的スレッド -->
+<div class="section" style="animation-delay:.4s">
+  <div class="sh" onclick="toggle(this)">
+    <span class="sh-icon">🤖</span>
+    <h2>暗黙的スレッド（Implicit Threading）：スレッドからタスクへ</h2>
+    <span class="stag t4">IMPLICIT</span>
+    <span class="tog">▼</span>
+  </div>
+  <div class="sb">
+    <div class="cp">数百・数千のスレッドを手動管理するのは現実的でない。<span class="k4">スレッドの生成・管理をコンパイラとランタイムライブラリに委ねる</span>のが暗黙的スレッド。</div>
+    <div class="cols2" style="margin-top:.8rem">
+      <div class="card">
+        <div class="lb" style="color:var(--muted)">旧来方式（明示的）</div>
+        <p>プログラマーが<strong>すべてのスレッドを手動で生成・管理</strong>。複雑で安全性確保が困難。</p>
+      </div>
+      <div class="card">
+        <div class="lb" style="color:var(--a4)">暗黙的スレッド（新方式）</div>
+        <p>プログラマーは<span class="k4">タスク（並列化できる仕事の単位）を特定するだけ</span>。ライブラリがスレッドプールへのマッピングを自動処理。</p>
+      </div>
+    </div>
+    <hr>
+    <div class="ct">主な実装技術</div>
+    <div class="cols3">
+      <div class="card">
+        <div class="lb" style="color:var(--a2)">スレッドプール</div>
+        <p>起動時にスレッドを事前生成しておき、タスクが来たら空きスレッドに割り当てる。完了後はプールに戻す。<br><br><span class="k2">メリット：</span>毎回生成・破棄のコスト不要。同時スレッド数の上限制御が可能。</p>
+      </div>
+      <div class="card">
+        <div class="lb" style="color:var(--a3)">Fork-Join（Java）</div>
+        <p>再帰的な分割統治に最適。問題をTHRESHOLD以下になるまで再帰的にFork→直接解く→Joinで結果を統合。<br><br><span class="k3">Work Stealing：</span>暇なスレッドが他スレッドのタスクを盗んで負荷分散。</p>
+      </div>
+      <div class="card">
+        <div class="lb" style="color:var(--a4)">OpenMP / GCD</div>
+        <p><span class="k4">OpenMP：</span><code>#pragma omp parallel for</code> の1行でループを並列化。ランタイムがコア数分スレッドを生成。<br><br><span class="k4">Grand Central Dispatch（Apple）：</span>タスクをキューに追加するだけ。シリアル/コンカレントキューを選択。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 9. スレッドキャンセレーション -->
+<div class="section" style="animation-delay:.45s">
+  <div class="sh" onclick="toggle(this)">
+    <span class="sh-icon">🛑</span>
+    <h2>スレッドの安全な終了：キャンセレーションの2方式</h2>
+    <span class="stag t1">CANCELLATION</span>
+    <span class="tog">▼</span>
+  </div>
+  <div class="sb">
+    <div class="cp">スレッドを完了前に終了させること。例：ブラウザで「停止」ボタンを押す。</div>
+    <div class="cancel-cols">
+      <div class="cc-bad">
+        <div class="ct2">① 非同期キャンセレーション ✗ 非推奨</div>
+        <p style="font-size:.86rem;color:#5a3020">一方のスレッドが対象スレッドを<span class="k1">即座に強制終了</span>する。<br><br>問題：共有データの更新中や、リソースを保持中に終了させるとデータ破損・リソースリークが発生。</p>
+      </div>
+      <div class="cc-good">
+        <div class="ct2">② 遅延キャンセレーション ✓ 推奨</div>
+        <p style="font-size:.86rem;color:#1a4028">対象スレッドが<span class="k3">定期的にフラグをチェック</span>し、自分で安全なタイミングで終了する。<br><br>リソースを確実に解放してクリーンに終了できる。<br><br>Pthreads：<code>pthread_testcancel()</code><br>Java：<code>isInterrupted()</code></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 10. TLS -->
+<div class="section" style="animation-delay:.48s">
+  <div class="sh" onclick="toggle(this)">
+    <span class="sh-icon">🔒</span>
+    <h2>Thread-Local Storage（TLS）：各スレッドだけのプライベートデータ</h2>
+    <span class="stag t5">TLS</span>
+    <span class="tog">▼</span>
+  </div>
+  <div class="sb">
+    <div class="cp">スレッドはデータを共有するが、<span class="k5">スレッド固有のデータが必要な場合</span>がある（例：各スレッドのトランザクションID）。</div>
+    <div class="cols2" style="margin-top:.8rem">
+      <div class="card">
+        <div class="lb" style="color:var(--a5)">TLSとは</div>
+        <p>グローバル変数のように見えるが、<span class="k5">各スレッドが独自のコピーを持つ</span>データ。スレッドのライフタイム全体で関数をまたいで保持される。<br><br><code>static __thread int threadID;</code>（GCC）</p>
+      </div>
+      <div class="card">
+        <div class="lb" style="color:var(--a2)">ローカル変数との違い</div>
+        <p>ローカル変数：1回の<strong>関数呼び出し中だけ</strong>有効。関数を抜けると消える。<br><br>TLS：関数をまたいで<strong>スレッドが生きている間ずっと</strong>有効。スレッドが終了すると消える。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 11. OSの実装 -->
+<div class="section" style="animation-delay:.52s">
+  <div class="sh" onclick="toggle(this)">
+    <span class="sh-icon">🔬</span>
+    <h2>ケーススタディ：Windows と Linux のスレッド実装</h2>
+    <span class="stag t2">OS IMPL</span>
+    <span class="tog">▼</span>
+  </div>
+  <div class="sb">
+    <div class="os-cols">
+      <div class="card" style="border-color:#90b8e8">
+        <div class="lb" style="color:var(--a2)">Windows — One-to-One モデル</div>
+        <p>各ユーザースレッドを対応するカーネルスレッドに1:1マッピング。データ構造が明確に分離：<br><br>
+          <span class="k2">TEB</span>（Thread Environment Block）：ユーザー空間。スレッドID・ユーザーモードスタック・TLS。<br>
+          <span class="k2">ETHREAD</span>（Executive Thread Block）：カーネル空間。親プロセスへのポインタ。<br>
+          <span class="k2">KTHREAD</span>（Kernel Thread Block）：カーネル空間。スケジューリング・同期情報。
+        </p>
+      </div>
+      <div class="card" style="border-color:#90d0a8">
+        <div class="lb" style="color:var(--a3)">Linux — タスク統一モデル</div>
+        <p>Linuxは<span class="k3">プロセスとスレッドを区別しない</span>。すべての実行の流れを「<strong>タスク</strong>」と呼ぶ。<br><br>
+          システムコール <span class="k3">clone()</span> でタスクを生成。フラグで挙動を制御：<br>
+          フラグあり（<code>CLONE_VM</code>等）→ <strong>スレッド的動作</strong>（VMを共有）<br>
+          フラグなし → <strong>プロセス的動作</strong>（VMをコピー）<br><br>
+          <code>task_struct</code> が他のデータ構造へのポインタを持ち、共有か独立かをフラグで切り替える柔軟な設計。
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+<script>
+function toggle(h){
+  h.classList.toggle('open');
+  h.nextElementSibling.classList.toggle('open');
+}
+</script>
+</body>
+</html>

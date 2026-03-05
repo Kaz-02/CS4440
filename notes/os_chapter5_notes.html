@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 5 — CPU スケジューリング</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #faf8f4;
+  --surface: #ffffff;
+  --ink: #1a1610;
+  --muted: #8a7e6e;
+  --border: #e4ddd1;
+  --warm: #f5f0e8;
+  --a1: #c94a1a; /* 赤オレンジ */
+  --a2: #1a5fa0; /* 青 */
+  --a3: #1a8a50; /* 緑 */
+  --a4: #8a3ab0; /* 紫 */
+  --a5: #b08a1a; /* 金 */
+  --a6: #b04060; /* ローズ */
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  line-height: 1.7;
+  padding: 2.5rem 1rem 6rem;
+}
+
+/* Subtle grid texture */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(circle, #c8b89a22 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wrap { max-width: 860px; margin: 0 auto; position: relative; z-index: 1; }
+
+/* ── Header ── */
+@keyframes fadeDown { from { opacity:0; transform:translateY(-14px); } to { opacity:1; transform:translateY(0); } }
+
+header {
+  border-bottom: 3px double var(--ink);
+  padding-bottom: 1.6rem;
+  margin-bottom: 2.8rem;
+  animation: fadeDown .5s ease both;
+}
+.ch-tag {
+  display: inline-block;
+  font-family: 'DM Mono', monospace;
+  font-size: .65rem;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--a1);
+  border: 1px solid var(--a1);
+  padding: .18rem .6rem;
+  margin-bottom: .8rem;
+  border-radius: 2px;
+}
+header h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.4rem;
+  font-weight: 900;
+  line-height: 1.15;
+  margin-bottom: .4rem;
+}
+header h1 em { color: var(--a2); font-style: normal; }
+header p { font-size: .9rem; color: var(--muted); max-width: 56ch; }
+
+/* ── Core concept callout ── */
+.core-idea {
+  background: linear-gradient(135deg, #fff8f0, #f0f5ff);
+  border: 1.5px solid #ddd0c8;
+  border-left: 5px solid var(--a1);
+  border-radius: 6px;
+  padding: 1.2rem 1.6rem;
+  margin-bottom: 2.8rem;
+  font-size: .93rem;
+  animation: fadeDown .5s ease .06s both;
+}
+.core-idea .lbl { font-family: 'DM Mono', monospace; font-size: .62rem; letter-spacing: .15em; color: var(--a1); text-transform: uppercase; margin-bottom: .35rem; }
+
+/* ── Section ── */
+@keyframes slideUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+.section {
+  margin-bottom: 1.4rem;
+  animation: slideUp .4s ease both;
+}
+.sh {
+  display: flex; align-items: center; gap: .8rem;
+  padding: .9rem 1.2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  user-select: none;
+  transition: background .15s;
+}
+.sh:hover { background: var(--warm); }
+.sh.open { border-bottom: none; }
+.sh .icon { font-size: 1.05rem; flex-shrink: 0; }
+.sh h2 { flex: 1; font-size: .92rem; font-weight: 600; }
+.stag {
+  font-family: 'DM Mono', monospace;
+  font-size: .6rem;
+  padding: .14rem .48rem;
+  border-radius: 20px;
+  border: 1px solid;
+  letter-spacing: .05em;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.t1 { color: var(--a1); border-color: var(--a1); background: #fff2ec; }
+.t2 { color: var(--a2); border-color: var(--a2); background: #ecf3ff; }
+.t3 { color: var(--a3); border-color: var(--a3); background: #ecfff3; }
+.t4 { color: var(--a4); border-color: var(--a4); background: #f6ecff; }
+.t5 { color: var(--a5); border-color: var(--a5); background: #fffaec; }
+.t6 { color: var(--a6); border-color: var(--a6); background: #fff0f3; }
+.tog { color: var(--muted); font-size: .72rem; transition: transform .25s; }
+.sh.open .tog { transform: rotate(180deg); }
+
+.sb {
+  display: none;
+  padding: 1.4rem 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+}
+.sb.open { display: block; }
+
+/* ── Content helpers ── */
+.ct {
+  font-family: 'DM Mono', monospace;
+  font-size: .68rem;
+  color: var(--a2);
+  letter-spacing: .07em;
+  margin-bottom: .3rem;
+  margin-top: 1rem;
+  text-transform: uppercase;
+}
+.ct:first-child { margin-top: 0; }
+.cp { font-size: .89rem; color: #3d3428; line-height: 1.7; }
+hr { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+
+.k1 { color: var(--a1); font-weight: 600; }
+.k2 { color: var(--a2); font-weight: 600; }
+.k3 { color: var(--a3); font-weight: 600; }
+.k4 { color: var(--a4); font-weight: 600; }
+.k5 { color: var(--a5); font-weight: 600; }
+.k6 { color: var(--a6); font-weight: 600; }
+
+code {
+  font-family: 'DM Mono', monospace;
+  font-size: .8rem;
+  background: var(--warm);
+  padding: .05rem .3rem;
+  border-radius: 3px;
+  color: var(--a1);
+}
+
+.quote {
+  border-left: 3px solid var(--a2);
+  padding: .5rem 1rem;
+  background: #f0f5ff;
+  border-radius: 0 6px 6px 0;
+  font-size: .87rem;
+  color: #1a3060;
+  margin: .8rem 0;
+  font-style: italic;
+}
+
+/* Grid layouts */
+.cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; margin-top: .7rem; }
+.cols3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; margin-top: .7rem; }
+.cols4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: .7rem; margin-top: .7rem; }
+
+/* Cards */
+.card {
+  background: var(--warm);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: .9rem 1rem;
+}
+.card .lb {
+  font-family: 'DM Mono', monospace;
+  font-size: .63rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  margin-bottom: .4rem;
+  font-weight: 500;
+}
+.card p { font-size: .84rem; color: #4a4030; }
+
+/* Scheduling criteria */
+.criteria-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; margin-top: .8rem; }
+.crit {
+  border-radius: 8px;
+  padding: .9rem 1rem;
+  border: 1px solid;
+}
+.crit-util { background:#f0fff5; border-color:#90d0a8; }
+.crit-thru { background:#ecf3ff; border-color:#90b8e8; }
+.crit-turn { background:#fff5ec; border-color:#f0c090; }
+.crit-wait { background:#f6ecff; border-color:#c090e0; }
+.crit-resp { background:#fff0f3; border-color:#e090a8; }
+.crit .ct2 { font-weight: 700; font-size: .88rem; margin-bottom: .3rem; }
+.crit-util .ct2 { color: var(--a3); }
+.crit-thru .ct2 { color: var(--a2); }
+.crit-turn .ct2 { color: var(--a5); }
+.crit-wait .ct2 { color: var(--a4); }
+.crit-resp .ct2 { color: var(--a6); }
+.crit p { font-size: .83rem; color: #4a4030; }
+
+/* Algorithm table */
+.algo-table { width: 100%; border-collapse: collapse; margin-top: .8rem; font-size: .84rem; }
+.algo-table th {
+  background: var(--ink);
+  color: #fff;
+  font-family: 'DM Mono', monospace;
+  font-size: .67rem;
+  letter-spacing: .08em;
+  padding: .5rem .8rem;
+  text-align: left;
+}
+.algo-table td { padding: .65rem .8rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+.algo-table tr:last-child td { border-bottom: none; }
+.algo-table tr:nth-child(even) td { background: var(--warm); }
+.algo-table .algo-name { font-weight: 600; font-size: .87rem; }
+
+/* Burst cycle visual */
+.burst-visual { margin: .8rem 0; }
+.timeline { display: flex; height: 36px; border-radius: 5px; overflow: hidden; font-size: .7rem; margin-bottom: .3rem; }
+.tl-seg { display: flex; align-items: center; justify-content: center; font-weight: 600; color: white; }
+.tl-cpu { background: var(--a2); }
+.tl-io  { background: #bbb; color: #555; }
+.tl-label { font-size: .74rem; color: var(--muted); }
+
+/* Gantt bar */
+.gantt { display: flex; margin: .6rem 0; height: 30px; border-radius: 4px; overflow: hidden; }
+.g-p1 { background: #1a5fa0; color: white; }
+.g-p2 { background: #c94a1a; color: white; }
+.g-p3 { background: #1a8a50; color: white; }
+.g-p4 { background: #8a3ab0; color: white; }
+.g-seg { display: flex; align-items: center; justify-content: center; font-size: .68rem; font-weight: 700; }
+
+/* Preemptive comparison */
+.preempt-cols { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; margin-top: .8rem; }
+.pc-no { background: #fff5ec; border: 1px solid #f0c090; border-radius: 8px; padding: .9rem 1rem; }
+.pc-yes { background: #ecf3ff; border: 1px solid #90b8e8; border-radius: 8px; padding: .9rem 1rem; }
+.pc-no .ct3, .pc-yes .ct3 { font-weight: 700; font-size: .88rem; margin-bottom: .4rem; }
+.pc-no .ct3 { color: var(--a5); }
+.pc-yes .ct3 { color: var(--a2); }
+
+/* Multilevel queue visual */
+.mq-visual { margin-top: .8rem; display: flex; flex-direction: column; gap: .4rem; }
+.mq-row { display: flex; align-items: center; gap: .6rem; }
+.mq-pri { font-family: 'DM Mono', monospace; font-size: .65rem; color: var(--muted); min-width: 60px; }
+.mq-bar { height: 26px; border-radius: 4px; display: flex; align-items: center; padding: 0 .6rem; font-size: .72rem; font-weight: 600; color: white; }
+.mq-0 { background: var(--a1); width: 90%; }
+.mq-1 { background: var(--a5); width: 75%; }
+.mq-2 { background: var(--a2); width: 60%; }
+.mq-3 { background: var(--a3); width: 45%; }
+
+/* CFS vruntime visual */
+.vruntime-row { display: flex; align-items: center; gap: .6rem; margin: .3rem 0; }
+.vr-label { font-family: 'DM Mono', monospace; font-size: .68rem; color: var(--muted); min-width: 36px; }
+.vr-bar { height: 20px; background: var(--a2); border-radius: 3px; opacity: .8; }
+.vr-arrow { font-size: .7rem; color: var(--a3); font-weight: 700; }
+
+/* RMS / EDF */
+.algo-rt { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; margin-top: .8rem; }
+.rt-card { border-radius: 8px; padding: .9rem 1rem; border: 1px solid; }
+.rt1 { background: #f0fff5; border-color: #90d0a8; }
+.rt2 { background: #ecf3ff; border-color: #90b8e8; }
+.rt-card .rtitle { font-weight: 700; font-size: .9rem; margin-bottom: .5rem; }
+.rt1 .rtitle { color: var(--a3); }
+.rt2 .rtitle { color: var(--a2); }
+.rt-card p { font-size: .83rem; color: #3a3028; margin-bottom: .3rem; }
+.rt-card .rtag { font-family: 'DM Mono', monospace; font-size: .65rem; color: var(--muted); }
+
+@media (max-width: 600px) {
+  .cols2, .cols3, .cols4, .criteria-grid, .preempt-cols, .algo-rt, .mq-visual .mq-row { grid-template-columns: 1fr; }
+  header h1 { font-size: 1.7rem; }
+  .mq-bar { width: 100% !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="ch-tag">Chapter 5 — 学習ノート</div>
+  <h1>CPU <em>スケジューリング</em></h1>
+  <p>どのプロセスをいつ・どの順番でCPUに乗せるか。OSの心臓部を支えるアルゴリズムと設計哲学を理解する。</p>
+</header>
+
+<div class="core-idea">
+  <div class="lbl">💡 この章の核心</div>
+  <p>CPUスケジューリングは<strong>マルチプログラミングの心臓部</strong>。プロセスはCPUバーストとI/O待ちを繰り返す（CPU-I/Oバーストサイクル）。スケジューラはI/O待ちの「沈黙」を埋めて<strong>CPU使用率を最大化</strong>するのが仕事。目標はシンプルだが、効率と応答性のバランスを取るのは複雑な設計問題だ。</p>
+</div>
+
+<!-- 1. CPU-I/Oバーストサイクル -->
+<div class="section" style="animation-delay:.05s">
+  <div class="sh open" onclick="toggle(this)">
+    <span class="icon">🔄</span>
+    <h2>CPU-I/Oバーストサイクル：スケジューリングが必要な理由</h2>
+    <span class="stag t2">FOUNDATION</span>
+    <span class="tog">▼</span>
+  </div>
+  <div class="sb open">
+    <div class="ct">プロセスの実行パターン</div>
+    <div class="burst-visual">
+      <div class="tl-label" style="margin-bottom:.3rem">シングルプロセス（非効率）</div>
+      <div class="timeline" style="margin-bottom:.6rem">
+        <div class="tl-seg tl-cpu" style="flex:1">CPU</div>
+        <div class="tl-seg tl-io"  style="flex:2">I/O 待ち（CPU アイドル）</div>
+        <div class="tl-seg tl-cpu" style="flex:1">CPU</div>
+        <div class="tl-seg tl-io"  style="flex:2">I/O 待ち</div>
+        <div class="tl-seg tl-cpu" style="flex:1">CPU</div>
+      </div>
+      <div class="tl-label" style="margin-bottom:.3rem">マルチプログラミング（効率的）</div>
+      <div class="timeline">
+        <div class="tl-seg tl-cpu" style="flex:1">A</div>
+        <div class="tl-seg" style="flex:2;background:#c94a1a">B（A待ち中）</div>
+        <div class="tl-seg tl-cpu" style="flex:1">A</div>
+        <div class="tl-seg" style="flex:2;background:#1a8a50">C（A待ち中）</div>
+        <div class="tl-seg tl-cpu" style="flex:1">A</div>
+      </div>
+    </div>
+    <div class="cols2" style="margin-top:.8rem">
+      <div class="card">
+        <div class="lb" style="color:var(--a2)">I/Oバウンド プロセス</div>
+        <p><span class="k2">短いCPUバーストが多数</span>。すぐにI/O待ちに入る。例：ファイル読み書き、ネットワーク通信。インタラクティブアプリに多い。</p>
+      </div>
+      <div class="card">
+        <div class="lb" style="color:var(--a1)">CPUバウンド プロセス</div>
+        <p><span class="k1">少数の長いCPUバースト</span>。ほとんどの時間をCPU計算に使う。例：動画エンコード、科学計算。</p>
+      </div>
+    </div>
+    <div class="quote">スケジューラの主な仕事は「I/O待ちの沈黙を別のプロセスで埋めること」。バーストの分布は指数関数的に減少し、短いバーストが圧倒的に多い。</div>
+  </div>
+</div>
+
+<!-- 2. スケジューラ vs ディスパッチャ -->
+<div class="section" style="animation-delay:.1s">
+  <div class="sh" onclick="toggle(this)">
+    <span class="icon">⚙️</span>
+    <h2>スケジューラとディスパッチャ：決定者と実行者</h2>
+    <span class="stag t1">COMPONENTS</span>
+    <span class="tog">▼</span>
+  </div>
+  <div class="sb">
+    <div class="cols2">
+      <div class="card" style="border-color:#90b8e8">
+        <div class="lb" style="color:var(--a2)">CPUスケジューラ（意思決定者）</div>
+        <p>レディキューから<span class="k2">次に実行するプロセスを選ぶ</span>。「何を実行するか」を決める。複雑なアルゴリズムで最適化。</p>
+      </div>
+      <div class="card" style="border-color:#f0c090">
+        <div class="lb" style="color:var(--a5)">ディスパッチャ（実行者）</div>
+        <p>スケジューラが選んだプロセスに<span class="k5">実際にCPUを渡す</span>作業をする。コンテキストスイッチ・ユーザーモード切替・PCジャンプなどを行う。<strong>Dispatch Latency</strong>（オーバーヘッド）は低いほど良い。</p>
+      </div>
+    </div>
+    <hr>
+    <div class="ct">プリエンプティブ vs ノンプリエンプティブ</div>
+    <div class="preempt-cols">
+      <div class="pc-no">
+        <div class="ct3">ノンプリエンプティブ（協調的）</div>
+        <p style="font-size:.85rem;color:#5a4020">プロセスがCPUを自発的に手放すまで<span class="k5">実行し続ける</span>（終了 or I/O要求）。<br><br>シンプルだが、長いプロセスが短いプロセスを延々とブロック。インタラクティブシステムには不向き。</p>
+      </div>
+      <div class="pc-yes">
+        <div class="ct3">プリエンプティブ ★現代の標準</div>
+        <p style="font-size:.85rem;color:#1a3060">高優先度プロセスの到着やタイムスライス切れで<span class="k2">CPUを強制的に奪える</span>。Running → Ready への遷移がここで発生。<br><br>Windows・Linux・macOS・UNIX全て採用。応答性と公平性を実現。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 3. 5つの評価指標 -->
+<div class="section" style="animation-delay:.15s">
+  <div class="sh" onclick="toggle(this)">
+    <span class="icon">📊</span>
+    <h2>優れたスケジューラの5つの評価指標</h2>
+    <span class="stag t5">CRITERIA</span>
+    <span class="tog">▼</span>
+  </div>
+  <div class="sb">
+    <div class="cp">アルゴリズムによって最適化する目標が異なる。1つを改善すると他が悪化するトレードオフが存在する。</div>
+    <div class="criteria-grid">
+      <div class="crit crit-util">
+        <div class="ct2">① CPU Utilization</div>
+        <p>CPUをできるだけビジーに保つ。実システムでは軽負荷40%〜高負荷90%。<strong>最大化</strong>が目標。</p>
+      </div>
+      <div class="crit crit-thru">
+        <div class="ct2">② Throughput</div>
+        <p>単位時間あたりに完了するプロセス数。どれだけ仕事をこなしているかの指標。<strong>最大化</strong>が目標。</p>
+      </div>
+      <div class="crit crit-turn">
+        <div class="ct2">③ Turnaround Time</div>
+        <p>プロセス投入から完了までの総時間。待ち時間＋実行時間＋I/O時間の合計。<strong>最小化</strong>が目標。</p>
+      </div>
+      <div class="crit crit-wait">
+        <div class="ct2">④ Waiting Time ★主要指標</div>
+        <p>プロセスがレディキューで待ち続けた時間の合計。スケジューリングアルゴリズムが最も直接影響する指標。<strong>最小化</strong>が目標。</p>
+      </div>
+      <div class="crit crit-resp">
+        <div class="ct2">⑤ Response Time</div>
+        <p>リクエスト投入から<em>最初の</em>応答が出るまでの時間。インタラクティブシステムで特に重要。<strong>最小化</strong>が目標。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 4. スケジューリングアルゴリズム -->
+<div class="section" style="animation-delay:.2s">
+  <div class="sh" onclick="toggle(this)">
+    <span class="icon">🗂️</span>
+    <h2>古典スケジューリングアルゴリズム比較</h2>
+    <span class="stag t4">ALGORITHMS</span>
+    <span class="tog">▼</span>
+  </div>
+  <div class="sb">
+    <table class="algo-table">
+      <tr>
+        <th>アルゴリズム</th>
+        <th>仕組み</th>
+        <th>メリット</th>
+        <th>致命的な欠点</th>
+      </tr>
+      <tr>
+        <td><span class="algo-name k2">FCFS</span><br><small>先着順</small></td>
+        <td>到着順にCPUを割り当て。FIFOキュー。ノンプリエンプティブ。</td>
+        <td>シンプル・実装容易</td>
+        <td><span class="k1">コンボイ効果</span>：短いプロセスが長いプロセスの後ろに詰まる。インタラクティブに最悪。</td>
+      </tr>
+      <tr>
+        <td><span class="algo-name k3">SJF</span><br><small>最短ジョブ優先</small></td>
+        <td>次のCPUバーストが最短のプロセスを選ぶ。同率ならFCFS。</td>
+        <td>平均待ち時間が<span class="k3">理論上最適</span></td>
+        <td>次バーストの長さを<span class="k1">予知できない</span>。指数移動平均で予測が必要。</td>
+      </tr>
+      <tr>
+        <td><span class="algo-name k1">RR</span><br><small>ラウンドロビン</small></td>
+        <td>各プロセスにタイムクォンタム（10〜100ms）ずつCPUを与え、使い切ったら末尾へ。プリエンプティブ。</td>
+        <td>インタラクティブに<span class="k1">優れた応答性</span>・公平性</td>
+        <td>性能がクォンタムサイズに大きく依存。小さすぎると文脈切替オーバーヘッド爆発。</td>
+      </tr>
+      <tr>
+        <td><span class="algo-name k4">Priority</span><br><small>優先度順</small></td>
+        <td>各プロセスに優先度番号を付与（小さい数＝高優先）。最高優先度のプロセスを選ぶ。プリエンプティブ/非両対応。</td>
+        <td>重要度を外部要因で制御可能</td>
+        <td><span class="k1">飢餓（Starvation）</span>：低優先度プロセスが永遠に実行されない可能性。解決策は<span class="k3">エージング</span>。</td>
+      </tr>
+    </table>
+
+    <hr>
+    <div class="ct">SJF：指数移動平均による次バーストの予測</div>
+    <div class="cols2">
+      <div class="card">
+        <div class="lb" style="color:var(--a3)">予測式</div>
+        <p style="font-family:'DM Mono',monospace;font-size:.85rem;margin-bottom:.5rem">τ(n+1) = α · t(n) + (1-α) · τ(n)</p>
+        <p><strong>τ(n+1)</strong>：次バーストの予測値<br><strong>t(n)</strong>：直前の実際のバースト<br><strong>τ(n)</strong>：直前の予測値<br><strong>α（通常0.5）</strong>：直近履歴の重み</p>
+      </div>
+      <div class="card">
+        <div class="lb" style="color:var(--a1)">RR：クォンタムサイズのトレードオフ</div>
+        <p><span class="k5">大きすぎる</span>（バーストより大）→ FCFSに退化。応答性消失。<br><br><span class="k1">小さすぎる</span>（切替コストより小）→ コンテキストスイッチのオーバーヘッドがCPU時間を支配。<br><br><span class="k3">目安：CPUバーストの80%がクォンタムより短くなるよう設定。</span></p>
+      </div>
+    </div>
+
+    <hr>
+    <div class="ct">Priority + RR の組み合わせ</div>
+    <div class="cp">同じ優先度のプロセス間ではラウンドロビンを適用し、異なる優先度間では高優先度を先に実行する。P4（優先1）→ P2・P3（優先2・RR）→ P1・P5（優先3・RR）の順で処理。</div>
+  </div>
+</div>
+
+<!-- 5. マルチレベルキュー -->
+<div class="section" style="animation-delay:.25s">
+  <div class="sh" onclick="toggle(this)">
+    <span class="icon">🏗️</span>
+    <h2>マルチレベルキュー と マルチレベルフィードバックキュー</h2>
+    <span class="stag t6">QUEUES</span>
+    <span class="tog">▼</span>
+  </div>
+  <div class="sb">
+    <div class="cols2">
+      <div>
+        <div class="ct">マルチレベルキュー（固定）</div>
+        <div class="mq-visual">
+          <div class="mq-row">
+            <span class="mq-pri">Priority 0</span>
+            <div class="mq-bar mq-0">リアルタイム（最高）</div>
+          </div>
+          <div class="mq-row">
+            <span class="mq-pri">Priority 1</span>
+            <div class="mq-bar mq-1">システムプロセス</div>
+          </div>
+          <div class="mq-row">
+            <span class="mq-pri">Priority 2</span>
+            <div class="mq-bar mq-2">インタラクティブ</div>
+          </div>
+          <div class="mq-row">
+            <span class="mq-pri">Priority n</span>
+            <div class="mq-bar mq-3">バッチ（最低）</div>
+          </div>
+        </div>
+        <p style="font-size:.82rem;color:var(--muted);margin-top:.6rem">各プロセスは<strong>静的に</strong>キューに固定。上位キューが空でないと下位は実行されない。</p>
+      </div>
+      <div>
+        <div class="ct">マルチレベルフィードバックキュー（動的）★より優れた</div>
+        <div class="card" style="margin-top:.5rem">
+          <div class="lb" style="color:var(--a4)">キュー間の移動が可能</div>
+          <p>典型的な構成：<br>
+          <strong>Q0</strong>：RR（quantum=8ms）← 新ジョブはここから<br>
+          <strong>Q1</strong>：RR（quantum=16ms）← 8msで終わらなければ降格<br>
+          <strong>Q2</strong>：FCFS ← さらに終わらなければ降格<br><br>
+          I/Oバウンドな短いジョブは高優先キューに居続け、CPUバウンドな長いジョブは自動的に低優先キューへ降格。<span class="k4">エージング</span>（優先度の自動昇格）でStarvationを防ぐ。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 6. マルチプロセッサスケジューリング -->
+<div class="section" style="animation-delay:.3s">
+  <div class="sh" onclick="toggle(this)">
+    <span class="icon">🖥️</span>
+    <h2>マルチプロセッサスケジューリング：負荷分散 vs プロセッサ親和性</h2>
+    <span class="stag t2">MULTICORE</span>
+    <span class="tog">▼</span>
+  </div>
+  <div class="sb">
+    <div class="ct">2つのアーキテクチャアプローチ</div>
+    <div class="cols2">
+      <div class="card">
+        <div class="lb" style="color:var(--muted)">非対称マルチプロセッシング</div>
+        <p>1つのマスターコアが全スケジューリングを担当。他コアはコード実行のみ。<span class="k3">✓ シンプル</span> <span class="k1">✗ マスターがボトルネックに</span></p>
+      </div>
+      <div class="card">
+        <div class="lb" style="color:var(--a2)">SMP — 対称マルチプロセッシング ★現代標準</div>
+        <p>各プロセッサが<span class="k2">自己スケジューリング</span>。全ての現代OSが採用。レディキューの設計が鍵：<br>共通キュー（ボトルネックあり）vs コアごとのキュー（ロードバランシング必要）。</p>
+      </div>
+    </div>
+    <hr>
+    <div class="ct">コアの緊張：負荷分散 ⚡ プロセッサ親和性</div>
+    <div class="cols2">
+      <div class="card" style="border-color:#90d0a8">
+        <div class="lb" style="color:var(--a3)">負荷分散（Load Balancing）</div>
+        <p>コアごとのキューで一部コアがアイドル・他が過負荷になるのを防ぐ。<br><br><span class="k3">プッシュ移行</span>：過負荷コアがアイドルコアにタスクを押し出す<br><span class="k3">プル移行</span>：アイドルコアが忙しいコアからタスクを引き出す</p>
+      </div>
+      <div class="card" style="border-color:#f0c090">
+        <div class="lb" style="color:var(--a5)">プロセッサ親和性（Processor Affinity）</div>
+        <p>スレッドを別コアに移すと<span class="k1">ウォームキャッシュが無効化</span>され、メインメモリから再読み込みが必要に。<br><br><span class="k5">ソフト親和性</span>：OSが同コアに留めようとする<br><span class="k5">ハード親和性</span>：プロセスが実行コアを指定する</p>
+      </div>
+    </div>
+    <div class="quote">負荷分散とプロセッサ親和性は本質的に対立する。現代スケジューラの高度さは「負荷均等化の利益がウォームキャッシュを失うコストを上回る場合」を判断できるところにある。</div>
+    <div class="ct">NUMA（非一様メモリアクセス）</div>
+    <div class="cp">NUMAシステムではスレッドを別ノードに移すと<span class="k1">遠いメモリへのアクセスが遅くなる（NUMAペナルティ）</span>。CFS はスケジューリングドメインを階層化し、ドメイン内では積極的に、ドメイン間では保守的にロードバランシングする。</div>
+  </div>
+</div>
+
+<!-- 7. リアルタイムスケジューリング -->
+<div class="section" style="animation-delay:.35s">
+  <div class="sh" onclick="toggle(this)">
+    <span class="icon">⏱️</span>
+    <h2>リアルタイムCPUスケジューリング：時間が全て</h2>
+    <span class="stag t6">REAL-TIME</span>
+    <span class="tog">▼</span>
+  </div>
+  <div class="sb">
+    <div class="cols2">
+      <div class="card" style="border-color:#e090a8">
+        <div class="lb" style="color:var(--a6)">ソフトリアルタイム</div>
+        <p>クリティカルなプロセスが非クリティカルより<span class="k6">優先されることを保証</span>するのみ。締め切りを守る保証はない。例：ストリーミングメディア。</p>
+      </div>
+      <div class="card" style="border-color:#c090e0">
+        <div class="lb" style="color:var(--a4)">ハードリアルタイム</div>
+        <p>タスクは<span class="k4">必ず締め切りまでに処理されなければならない</span>。失敗は壊滅的。例：ABSブレーキ制御、医療機器、航空制御システム。</p>
+      </div>
+    </div>
+    <hr>
+    <div class="ct">レイテンシメトリクス</div>
+    <div class="cp">イベント発生から応答まで：<span class="k1">割り込みレイテンシ</span>（割り込みハンドラ開始まで）＋<span class="k4">ディスパッチレイテンシ</span>（コンフリクトフェーズ＋ディスパッチフェーズ）＝ <span class="k6">イベントレイテンシ</span>（最小化が目標）</div>
+    <div class="algo-rt">
+      <div class="rt-card rt1">
+        <div class="rtitle">Rate-Monotonic（RMS）</div>
+        <p><strong>優先度ポリシー：</strong>静的。周期が短いほど高優先度。</p>
+        <p><strong>ルール：</strong>短い周期 ＝ 高い優先度</p>
+        <p><span class="k3">静的優先度アルゴリズムの中で最適</span>。RMSが失敗する場合、他の静的アルゴリズムも失敗する。</p>
+        <p><span class="k1">限界：</span>CPU使用率の上限あり。多プロセス時の最悪ケース約69%止まり。</p>
+      </div>
+      <div class="rt-card rt2">
+        <div class="rtitle">Earliest-Deadline-First（EDF）</div>
+        <p><strong>優先度ポリシー：</strong>動的。締め切りが近いほど高優先度。</p>
+        <p><strong>ルール：</strong>締め切りが早い ＝ 高い優先度</p>
+        <p><span class="k2">理論上最適</span>。CPU使用率100%まで対応可能。周期タスクに限らない。</p>
+        <p><span class="k5">柔軟性：</span>プロセスが実行可能になった時点で締め切りを申告するだけでよい。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 8. Linux CFS -->
+<div class="section" style="animation-delay:.4s">
+  <div class="sh" onclick="toggle(this)">
+    <span class="icon">🐧</span>
+    <h2>ケーススタディ：Linux CFS（Completely Fair Scheduler）</h2>
+    <span class="stag t3">CFS / LINUX</span>
+    <span class="tog">▼</span>
+  </div>
+  <div class="sb">
+    <div class="cp">固定タイムスライスを廃止し、<span class="k3">各タスクにCPU時間の「公平な割合」</span>を与える。</div>
+    <div class="cols2" style="margin-top:.8rem">
+      <div class="card">
+        <div class="lb" style="color:var(--a3)">仮想実行時間（vruntime）</div>
+        <p>各タスクが累積した加重実行時間。CFSは常に<span class="k3">vruntimeが最小のタスク</span>を選んで実行する。<br><br><span class="k5">nice値</span>（-20〜+19）で重み付け：<span class="k5">低nice値 ＝ 高割合</span>（高優先タスクはvruntimeの蓄積が遅い）。</p>
+      </div>
+      <div class="card">
+        <div class="lb" style="color:var(--a2)">Red-Blackツリーでの管理</div>
+        <p>タスクをvruntimeをキーとするRed-Blackツリー（左端が最小）で管理。<br><br>I/Oバウンドタスクはよく眠るのでvruntimeが低く留まる → 起床時に最低vruntimeを持ち、CPUバウンドタスクをプリエンプトして<span class="k2">即時応答を実現</span>。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 9. HMP / big.LITTLE -->
+<div class="section" style="animation-delay:.45s">
+  <div class="sh" onclick="toggle(this)">
+    <span class="icon">📱</span>
+    <h2>異種マルチプロセッシング（HMP）：big.LITTLEアーキテクチャ</h2>
+    <span class="stag t5">HMP / ARM</span>
+    <span class="tog">▼</span>
+  </div>
+  <div class="sb">
+    <div class="cp"><span class="k5">異種コンピューティング</span>とは、同じISA（命令セット）を持つが<span class="k5">クロック速度・消費電力が異なる</span>コアを組み合わせたシステム。ARM big.LITTLEが代表例（iPhoneのPerformance/Efficiency Coreもこれ）。</div>
+    <div class="cols2" style="margin-top:.8rem">
+      <div class="card" style="border-color:#f0c090">
+        <div class="lb" style="color:var(--a1)">big コア（Performance）</div>
+        <p>高クロック・高消費電力。<span class="k1">短時間のインタラクティブ処理</span>や重い計算に使用。バッテリー消費が大きいため長時間は不向き。</p>
+      </div>
+      <div class="card" style="border-color:#90d0a8">
+        <div class="lb" style="color:var(--a3)">LITTLE コア（Efficiency）</div>
+        <p>低クロック・低消費電力。<span class="k3">バックグラウンドタスクや長時間処理</span>に使用。バッテリーを節約しながら動き続けられる。</p>
+      </div>
+    </div>
+    <div class="quote">目標：「可用性」ではなく<strong>「エネルギー要件」</strong>に基づいてタスクを割り当て、バッテリー寿命を最大化すること。</div>
+  </div>
+</div>
+
+<!-- 10. Windows & Solaris ケーススタディ -->
+<div class="section" style="animation-delay:.5s">
+  <div class="sh" onclick="toggle(this)">
+    <span class="icon">🔬</span>
+    <h2>ケーススタディ：Windows と Solaris のスケジューリング戦略</h2>
+    <span class="stag t2">CASE STUDY</span>
+    <span class="tog">▼</span>
+  </div>
+  <div class="sb">
+    <div class="cols2">
+      <div class="card" style="border-color:#90b8e8">
+        <div class="lb" style="color:var(--a2)">Windows — 優先度クラスとブースト</div>
+        <p><span class="k2">32段階の優先度</span>：リアルタイムクラス（16〜31）と可変クラス（1〜15）。<br><br><span class="k5">Priority Boosting：</span><br>
+        ①フォアグラウンドウィンドウは3倍のタイムクォンタムを取得<br>
+        ②I/O完了後に一時的な優先度ブーストを受ける<br><br>→ インタラクティブな体験を向上。</p>
+      </div>
+      <div class="card" style="border-color:#90d0a8">
+        <div class="lb" style="color:var(--a3)">Solaris — 逆相関関係</div>
+        <p>優先度とタイムクォンタムが<span class="k3">逆の相関関係</span>：<br><br>
+        <span class="k2">高優先度スレッド ＝ 短いスライス</span>（応答性優先）<br>
+        <span class="k5">低優先度スレッド ＝ 長いスライス</span>（スループット優先）<br><br>→ インタラクティブなタスクは素早く応答し、バックグラウンドの長いタスクはじっくり処理できる。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+function toggle(h) {
+  h.classList.toggle('open');
+  h.nextElementSibling.classList.toggle('open');
+}
+</script>
+</body>
+</html>
