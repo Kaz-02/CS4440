@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OS Chapter 4 — Quiz</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;600;700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+:root{--bg:#080c08;--surface:#0e140e;--border:#1a3a1a;--green:#00ff41;--gdim:#00aa2a;--gdark:#003310;--amber:#ffb000;--red:#ff3355;--white:#d4f0d4;--muted:#4a7a4a;--scan:rgba(0,255,65,0.03)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--white);font-family:'Noto Sans JP',sans-serif;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,var(--scan) 2px,var(--scan) 4px);pointer-events:none;z-index:100}
+@keyframes flicker{0%,100%{opacity:1}92%{opacity:1}93%{opacity:.96}94%{opacity:1}}
+body{animation:flicker 8s infinite}
+.wrap{max-width:720px;margin:0 auto;padding:2rem 1.2rem 4rem}
+header{border:1px solid var(--gdim);padding:1.4rem 1.8rem;margin-bottom:2rem;position:relative;background:var(--surface)}
+header::before{content:'OS_CHAPTER_4.EXE';position:absolute;top:-.6rem;left:1rem;background:var(--bg);padding:0 .5rem;font-family:'Inconsolata',monospace;font-size:.7rem;color:var(--gdim);letter-spacing:.1em}
+.htitle{font-family:'Inconsolata',monospace;font-size:1.5rem;font-weight:900;color:var(--green);letter-spacing:.05em;text-shadow:0 0 20px rgba(0,255,65,.5)}
+.hsub{font-size:.83rem;color:var(--muted);margin-top:.4rem;font-family:'Inconsolata',monospace}
+.scorebar{display:flex;justify-content:space-between;align-items:center;font-family:'Inconsolata',monospace;font-size:.8rem;color:var(--gdim);margin-bottom:1.6rem;padding:.5rem 0;border-bottom:1px solid var(--border)}
+.sval{color:var(--green);font-size:1.1rem;font-weight:700}
+.pbar{width:200px;height:6px;background:var(--gdark);border-radius:3px;overflow:hidden}
+.pfill{height:100%;background:var(--green);border-radius:3px;transition:width .4s ease;box-shadow:0 0 8px var(--green)}
+@keyframes slideIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes glow{0%,100%{box-shadow:none}50%{box-shadow:0 0 16px rgba(0,255,65,.25)}}
+.qcard{border:1px solid var(--border);background:var(--surface);padding:1.6rem 1.8rem;margin-bottom:1.5rem;position:relative;animation:slideIn .35s ease both}
+.qcard.ok{border-color:var(--green);animation:glow 1.5s ease .3s 2}
+.qcard.ng{border-color:var(--red)}
+.qnum{font-family:'Inconsolata',monospace;font-size:.7rem;color:var(--muted);letter-spacing:.1em;margin-bottom:.6rem}
+.qtext{font-size:.97rem;font-weight:500;color:var(--white);line-height:1.65;margin-bottom:1.2rem}
+.opts{display:grid;gap:.5rem}
+.opt{display:flex;align-items:flex-start;gap:.8rem;padding:.75rem 1rem;border:1px solid var(--border);background:var(--bg);cursor:pointer;transition:all .15s;font-size:.88rem;color:#a0c0a0;text-align:left;font-family:'Noto Sans JP',sans-serif;border-radius:2px;width:100%}
+.opt:hover:not(:disabled){border-color:var(--gdim);color:var(--white);background:var(--gdark)}
+.opt:disabled{cursor:default}
+.okey{font-family:'Inconsolata',monospace;font-size:.75rem;color:var(--muted);flex-shrink:0;margin-top:.05rem;min-width:1.5rem}
+.opt.correct{border-color:var(--green);background:rgba(0,255,65,.07);color:var(--green)}
+.opt.correct .okey{color:var(--green)}
+.opt.wrong{border-color:var(--red);background:rgba(255,51,85,.07);color:var(--red)}
+.opt.wrong .okey{color:var(--red)}
+.exp{margin-top:1rem;padding:.8rem 1rem;border-left:3px solid var(--gdim);background:var(--gdark);font-size:.84rem;color:#88cc88;line-height:1.6;display:none}
+.exp.show{display:block}
+.exp.wexp{border-left-color:var(--amber);background:#1a1000;color:#ccaa44}
+.badge{font-family:'Inconsolata',monospace;font-size:.7rem;letter-spacing:.08em;padding:.2rem .5rem;position:absolute;top:1rem;right:1rem}
+.bok{color:var(--green);border:1px solid var(--green)}
+.bng{color:var(--red);border:1px solid var(--red)}
+#result{display:none;border:1px solid var(--green);background:var(--surface);padding:2.5rem 2rem;text-align:center}
+.rscore{font-family:'Inconsolata',monospace;font-size:3.5rem;font-weight:900;color:var(--green);text-shadow:0 0 30px rgba(0,255,65,.6);line-height:1;margin-bottom:.3rem}
+.rlabel{font-family:'Inconsolata',monospace;font-size:.8rem;color:var(--muted);letter-spacing:.15em;margin-bottom:1.5rem}
+.rmsg{font-size:1.05rem;color:var(--white);margin-bottom:2rem;line-height:1.6}
+.btn{font-family:'Inconsolata',monospace;font-size:.9rem;font-weight:700;letter-spacing:.1em;color:var(--bg);background:var(--green);border:none;padding:.8rem 2.5rem;cursor:pointer;transition:all .2s;text-transform:uppercase}
+.btn:hover{background:#00dd38;box-shadow:0 0 20px rgba(0,255,65,.4)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.cursor{display:inline-block;width:8px;height:1em;background:var(--green);vertical-align:text-bottom;animation:blink 1s step-end infinite;margin-left:2px}
+@media(max-width:520px){.pbar{width:120px}header{padding:1rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="htitle">Chapter 4 Quiz<span class="cursor"></span></div>
+    <div class="hsub">> スレッド：並列処理の最小単位 — 全12問</div>
+  </header>
+  <div class="scorebar">
+    <span>SCORE: <span class="sval" id="sd">0</span> / <span id="td">12</span></span>
+    <div style="display:flex;align-items:center;gap:.8rem">
+      <span id="qc">Q 0/12</span>
+      <div class="pbar"><div class="pfill" id="prog" style="width:0%"></div></div>
+    </div>
+  </div>
+  <div id="qa"></div>
+  <div id="result"></div>
+</div>
+<script>
+const Q=[
+  {
+    q:"スレッドが同じプロセス内の他のスレッドと共有するものはどれか？",
+    opts:[
+      "プログラムカウンタ（PC）・レジスタセット・スタック",
+      "スタック・スレッドID・レジスタセット",
+      "コードセクション・データセクション・オープンファイル",
+      "スタック・コードセクション・スレッドID"
+    ],
+    ans:2,
+    exp:"同じプロセス内のスレッドが共有するのは「コードセクション・データセクション・ヒープ・オープンファイルなどのOSリソース」です。一方、PC（プログラムカウンタ）・レジスタセット・スタックはスレッドがそれぞれ独自に持ちます（Private）。この共有があるからこそスレッドは「軽量」と呼ばれます。"
+  },
+  {
+    q:"マルチスレッドの4つの利点として「Economy（経済性）」が挙げられる。これの説明として正しいのはどれか？",
+    opts:[
+      "スレッドはプロセスよりもセキュリティが高いため安全に実行できる",
+      "スレッドはリソースを共有するため、プロセスよりも生成コストとコンテキストスイッチコストが低い",
+      "スレッドを使うことでハードウェアコストを削減できる",
+      "スレッドはI/O処理を省略できるため高速になる"
+    ],
+    ans:1,
+    exp:"Economy（経済性）とは、スレッドの生成・コンテキストスイッチがプロセスに比べて低コストであることを指します。スレッドはコード・データ・ファイルを共有するため、新しいプロセスを生成するよりも必要なメモリと時間が少なく、スイッチも速くなります。"
+  },
+  {
+    q:"「並行性（Concurrency）」と「並列性（Parallelism）」の違いとして正しいのはどれか？",
+    opts:[
+      "並行性は複数コアが必須で、並列性はシングルコアでも実現できる",
+      "並行性は複数タスクが進捗できる状態（同時実行の錯覚）、並列性は複数タスクが本当に同時実行される状態で、マルチコアが必須",
+      "並行性と並列性は同じ意味で、使われる文脈によって呼び名が変わるだけ",
+      "並行性はハードウェアの概念で、並列性はソフトウェアの概念"
+    ],
+    ans:1,
+    exp:"並行性（Concurrency）は「多くのことを一度にさばく」こと。シングルコアでも高速な切り替え（インターリービング）で複数タスクが進捗できるように見せます。並列性（Parallelism）は「多くのことを一度に本当にやる」こと。複数コアで同時に実行するためマルチコアが必須です。並行なしの並列はありません。"
+  },
+  {
+    q:"アムダールの法則（Speedup ≤ 1 / (S + (1-S)/N)）において、コードの直列部分Sが25%（0.25）の場合、理論上の最大スピードアップはいくらか？",
+    opts:[
+      "4倍",
+      "2倍",
+      "無限大",
+      "8倍"
+    ],
+    ans:0,
+    exp:"アムダールの法則で、Nが無限大に近づくと最大スピードアップは 1/S に収束します。S=0.25の場合、1/0.25 = 4倍が上限です。コアをどれだけ追加しても4倍以上にはなりません。これは「直列部分がボトルネック」になることを示しており、並列化効果を最大化するには直列部分の削減が最重要です。"
+  },
+  {
+    q:"One-to-One スレッドモデルの特徴として正しいのはどれか？",
+    opts:[
+      "多数のユーザースレッドを1つのカーネルスレッドにマッピングする。1つがブロックすると全体がブロックされる",
+      "ユーザースレッドとカーネルスレッドを1対1でマッピングする。ブロックが全体に波及せず、マルチコアで真の並列実行が可能",
+      "多数のユーザースレッドを少数のカーネルスレッドに多重化する。実装が複雑",
+      "カーネルスレッドを使わず、すべてユーザー空間で管理する"
+    ],
+    ans:1,
+    exp:"One-to-Oneモデルはユーザースレッド1つに対してカーネルスレッドを1つ割り当てます。1つのスレッドがブロックしても他のスレッドが動き続けられ、マルチコアで真の並列実行が可能です。デメリットはスレッド作成のたびにカーネルスレッドも作成されることによるオーバーヘッド。LinuxとWindowsが採用している現代の標準モデルです。"
+  },
+  {
+    q:"現代のほとんどのOS（Linux・Windows）が採用しているスレッドマッピングモデルはどれか？",
+    opts:[
+      "Many-to-Oneモデル（多くのユーザースレッド → 1つのカーネルスレッド）",
+      "Many-to-Manyモデル（多くのユーザースレッド → 少数のカーネルスレッド）",
+      "One-to-Oneモデル（ユーザースレッド1つ → カーネルスレッド1つ）",
+      "Zero-to-Manyモデル（カーネルスレッドのみで管理）"
+    ],
+    ans:2,
+    exp:"コア数の増加に伴い「カーネルスレッド数を制限する必要性」が低下したため、現代のほとんどのOSはOne-to-Oneモデルを採用しています。LinuxとWindowsはどちらもOne-to-Oneです。Many-to-Manyモデルは柔軟ですが実装が複雑なため、実際にはあまり使われていません。"
+  },
+  {
+    q:"POSIX Pthreadsについて正しく説明しているのはどれか？",
+    opts:[
+      "Windowsが開発した独自のスレッドライブラリで、Linux/macOSでは使えない",
+      "IEEE 1003.1c仕様で定められた「実装ではなく動作を定義する仕様」。UNIX/Linux/macOSで標準的に使われる",
+      "Java Virtual Machine（JVM）が管理するスレッドシステム",
+      "カーネルスレッドを完全に隠蔽し、ユーザー空間のみで動作する"
+    ],
+    ans:1,
+    exp:"POSIX Pthreadsは特定の実装ではなく、IEEE 1003.1c規格によって「スレッドの動作仕様」を定義したものです。各OS（Linux, macOS, Solarisなど）が独自にこの仕様に従って実装します。UNIX/Linux/macOS環境での標準的なスレッドAPIです。pthread_create()でスレッドを生成、pthread_join()で同期します。"
+  },
+  {
+    q:"スレッドプール（Thread Pool）を使う主な理由として最も適切なのはどれか？",
+    opts:[
+      "スレッドプールを使うと、プログラムが自動的にバグを修正できるようになるから",
+      "タスクごとに新しいスレッドを作成・破棄するコストを避け、同時スレッド数の上限を制御できるから",
+      "スレッドプールはマルチコアCPUでしか動作しないから",
+      "スレッドプールを使うとコンテキストスイッチが完全になくなるから"
+    ],
+    ans:1,
+    exp:"スレッドプールは起動時にスレッドを事前生成しておき、タスクが来たら空きスレッドを割り当て、完了後はプールに戻します。①毎回スレッドを作成・破棄するコストが不要（速い）②同時スレッド数に上限を設けてリソース枯渇を防げる③タスクと実行メカニズムを分離して柔軟なスケジューリングが可能、という3つのメリットがあります。"
+  },
+  {
+    q:"Fork-Join モデル（Java）の「Work Stealing（ワークスチーリング）」とはどういう仕組みか？",
+    opts:[
+      "親スレッドが子スレッドのCPU時間を強制的に奪い取る仕組み",
+      "タスクキューが空になったスレッドが、他のビジーなスレッドのキューからタスクを盗んで負荷を均等化する仕組み",
+      "OSがプロセスからスレッドリソースを回収して再配分する仕組み",
+      "スレッドが他のスレッドのメモリを直接読み書きする仕組み"
+    ],
+    ans:1,
+    exp:"Work Stealingは負荷分散のためのアルゴリズムです。ForkJoinPoolで、自分のタスクキューが空になって暇なスレッドが、まだ仕事を持っているビジーなスレッドのキューから末尾のタスクを「盗んで」実行します。これにより全スレッドが均等に働き、CPUリソースを無駄なく活用できます。"
+  },
+  {
+    q:"OpenMPの `#pragma omp parallel for` ディレクティブを使ったとき、ランタイムライブラリはどのように動作するか？",
+    opts:[
+      "ループ全体を1つのスレッドで逐次実行するが、メモリ使用量を最適化する",
+      "コンパイル時にループを完全に展開して並列コードに変換する",
+      "処理コアの数と同じだけスレッドを生成し、ループの反復処理をスレッド間で分割して実行する",
+      "ループ変数をアトミック操作に変換してスレッドセーフにする"
+    ],
+    ans:2,
+    exp:"OpenMPのランタイムは `#pragma omp parallel for` を見ると、利用可能な処理コアの数と同数のスレッドを生成し、ループの反復処理（イテレーション）をスレッド間で均等に分割して並列実行します。開発者はディレクティブを1行追加するだけでループを並列化でき、スレッドの詳細な管理はランタイムライブラリが担います。"
+  },
+  {
+    q:"スレッドキャンセレーションにおいて「遅延キャンセレーション（Deferred Cancellation）」が推奨される理由はどれか？",
+    opts:[
+      "遅延キャンセレーションの方が非同期キャンセレーションより処理が速いから",
+      "対象スレッドが定期的にフラグをチェックして安全なタイミングで自分をクリーンに終了できるため、データ破損やリソースリークを防げるから",
+      "非同期キャンセレーションはマルチコアCPUでは動作しないから",
+      "遅延キャンセレーションはカーネルへのシステムコールが不要で軽量だから"
+    ],
+    ans:1,
+    exp:"非同期キャンセレーションは対象スレッドを即座に強制終了するため、共有データの更新中やリソース保持中に終了されるとデータ破損・リソースリークが発生する危険があります。遅延キャンセレーションではスレッド自身が定期的にキャンセルフラグを確認し、安全なタイミングで自らクリーンアップして終了します。Pthreadsでは pthread_testcancel()、Javaでは isInterrupted() を使います。"
+  },
+  {
+    q:"Thread-Local Storage（TLS）について正しく説明しているのはどれか？",
+    opts:[
+      "TLSはスレッド間でデータを共有するための高速なメカニズムである",
+      "TLSはグローバル変数のように見えるが各スレッドが独自のコピーを持つデータで、スレッドのライフタイム全体で関数をまたいで保持される",
+      "TLSはスタック上に保存されるローカル変数の別名である",
+      "TLSはカーネルスレッドにのみ適用でき、ユーザースレッドは使用できない"
+    ],
+    ans:1,
+    exp:"TLS（Thread-Local Storage）はグローバル変数のように宣言されているが、各スレッドが独自のコピーを持つデータです。ローカル変数は1回の関数呼び出し中だけ有効ですが、TLSはスレッドが生きている間ずっと関数をまたいで保持されます。例として「各スレッド固有のトランザクションID」などに使います。GCCでは `static __thread int threadID;` のように宣言します。"
+  }
+];
+
+let answered=new Array(Q.length).fill(null);
+let score=0;
+
+function render(){
+  const area=document.getElementById('qa');
+  area.innerHTML='';
+  Q.forEach((q,qi)=>{
+    const card=document.createElement('div');
+    card.className='qcard';
+    card.style.animationDelay=(qi*.04)+'s';
+    card.id='q'+qi;
+    const done=answered[qi]!==null;
+    const ok=done&&answered[qi]===q.ans;
+    if(done) card.classList.add(ok?'ok':'ng');
+    const badge=done?`<span class="badge ${ok?'bok':'bng'}">${ok?'✓ CORRECT':'✗ WRONG'}</span>`:'';
+    const opts=q.opts.map((o,oi)=>{
+      let cls='opt';
+      if(done){if(oi===q.ans)cls+=' correct';else if(oi===answered[qi])cls+=' wrong';}
+      return `<button class="${cls}" onclick="answer(${qi},${oi})" ${done?'disabled':''}><span class="okey">${String.fromCharCode(65+oi)}.</span><span>${o}</span></button>`;
+    }).join('');
+    const ecls='exp'+(done?' show':'')+(done&&!ok?' wexp':'');
+    card.innerHTML=`${badge}<div class="qnum">> Q${String(qi+1).padStart(2,'0')}</div><div class="qtext">${q.q}</div><div class="opts">${opts}</div><div class="${ecls}"><strong style="font-family:Inconsolata,monospace;font-size:.75rem;letter-spacing:.08em;">> 解説</strong><br>${q.exp}</div>`;
+    area.appendChild(card);
+  });
+  updateHUD();
+  if(answered.every(a=>a!==null)) setTimeout(showResult,600);
+}
+
+function answer(qi,oi){
+  if(answered[qi]!==null)return;
+  answered[qi]=oi;
+  if(oi===Q[qi].ans)score++;
+  render();
+  const next=answered.indexOf(null);
+  if(next!==-1) setTimeout(()=>document.getElementById('q'+next)?.scrollIntoView({behavior:'smooth',block:'center'}),300);
+}
+
+function updateHUD(){
+  const done=answered.filter(a=>a!==null).length;
+  document.getElementById('sd').textContent=score;
+  document.getElementById('qc').textContent=`Q ${done}/${Q.length}`;
+  document.getElementById('prog').style.width=(done/Q.length*100)+'%';
+}
+
+function showResult(){
+  document.getElementById('qa').style.display='none';
+  const rs=document.getElementById('result');
+  rs.style.display='block';
+  const pct=Math.round(score/Q.length*100);
+  const[msg,color]=pct===100?['完璧！スレッドとマルチコアの全概念を完全に習得しています。','var(--green)']
+    :pct>=80?['よくできました！解説を読んで更に深めましょう。','var(--green)']
+    :pct>=60?['半分以上正解！苦手な問題の解説を確認してみてください。','var(--amber)']
+    :['もう一度Chapter 4のノートを読み返してから再挑戦しましょう。','var(--red)'];
+  rs.innerHTML=`<div class="rscore" style="color:${color}">${score}<span style="font-size:1.8rem;opacity:.5">/${Q.length}</span></div><div class="rlabel">FINAL SCORE — ${pct}%</div><div class="rmsg">${msg}</div><button class="btn" onclick="retry()">[ RETRY ]</button>`;
+  rs.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function retry(){
+  answered=new Array(Q.length).fill(null);
+  score=0;
+  document.getElementById('qa').style.display='block';
+  document.getElementById('result').style.display='none';
+  render();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+render();
+</script>
+</body>
+</html>

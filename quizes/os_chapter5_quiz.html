@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OS Chapter 5 — Quiz</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;600;700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+:root{--bg:#080c08;--surface:#0e140e;--border:#1a3a1a;--green:#00ff41;--gdim:#00aa2a;--gdark:#003310;--amber:#ffb000;--red:#ff3355;--white:#d4f0d4;--muted:#4a7a4a;--scan:rgba(0,255,65,0.03)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--white);font-family:'Noto Sans JP',sans-serif;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,var(--scan) 2px,var(--scan) 4px);pointer-events:none;z-index:100}
+@keyframes flicker{0%,100%{opacity:1}92%{opacity:1}93%{opacity:.96}94%{opacity:1}}
+body{animation:flicker 8s infinite}
+.wrap{max-width:720px;margin:0 auto;padding:2rem 1.2rem 4rem}
+header{border:1px solid var(--gdim);padding:1.4rem 1.8rem;margin-bottom:2rem;position:relative;background:var(--surface)}
+header::before{content:'OS_CHAPTER_5.EXE';position:absolute;top:-.6rem;left:1rem;background:var(--bg);padding:0 .5rem;font-family:'Inconsolata',monospace;font-size:.7rem;color:var(--gdim);letter-spacing:.1em}
+.htitle{font-family:'Inconsolata',monospace;font-size:1.5rem;font-weight:900;color:var(--green);letter-spacing:.05em;text-shadow:0 0 20px rgba(0,255,65,.5)}
+.hsub{font-size:.83rem;color:var(--muted);margin-top:.4rem;font-family:'Inconsolata',monospace}
+.scorebar{display:flex;justify-content:space-between;align-items:center;font-family:'Inconsolata',monospace;font-size:.8rem;color:var(--gdim);margin-bottom:1.6rem;padding:.5rem 0;border-bottom:1px solid var(--border)}
+.sval{color:var(--green);font-size:1.1rem;font-weight:700}
+.pbar{width:200px;height:6px;background:var(--gdark);border-radius:3px;overflow:hidden}
+.pfill{height:100%;background:var(--green);border-radius:3px;transition:width .4s ease;box-shadow:0 0 8px var(--green)}
+@keyframes slideIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes glow{0%,100%{box-shadow:none}50%{box-shadow:0 0 16px rgba(0,255,65,.25)}}
+.qcard{border:1px solid var(--border);background:var(--surface);padding:1.6rem 1.8rem;margin-bottom:1.5rem;position:relative;animation:slideIn .35s ease both}
+.qcard.ok{border-color:var(--green);animation:glow 1.5s ease .3s 2}
+.qcard.ng{border-color:var(--red)}
+.qnum{font-family:'Inconsolata',monospace;font-size:.7rem;color:var(--muted);letter-spacing:.1em;margin-bottom:.6rem}
+.qtext{font-size:.97rem;font-weight:500;color:var(--white);line-height:1.65;margin-bottom:1.2rem}
+.opts{display:grid;gap:.5rem}
+.opt{display:flex;align-items:flex-start;gap:.8rem;padding:.75rem 1rem;border:1px solid var(--border);background:var(--bg);cursor:pointer;transition:all .15s;font-size:.88rem;color:#a0c0a0;text-align:left;font-family:'Noto Sans JP',sans-serif;border-radius:2px;width:100%}
+.opt:hover:not(:disabled){border-color:var(--gdim);color:var(--white);background:var(--gdark)}
+.opt:disabled{cursor:default}
+.okey{font-family:'Inconsolata',monospace;font-size:.75rem;color:var(--muted);flex-shrink:0;margin-top:.05rem;min-width:1.5rem}
+.opt.correct{border-color:var(--green);background:rgba(0,255,65,.07);color:var(--green)}
+.opt.correct .okey{color:var(--green)}
+.opt.wrong{border-color:var(--red);background:rgba(255,51,85,.07);color:var(--red)}
+.opt.wrong .okey{color:var(--red)}
+.exp{margin-top:1rem;padding:.8rem 1rem;border-left:3px solid var(--gdim);background:var(--gdark);font-size:.84rem;color:#88cc88;line-height:1.6;display:none}
+.exp.show{display:block}
+.exp.wexp{border-left-color:var(--amber);background:#1a1000;color:#ccaa44}
+.badge{font-family:'Inconsolata',monospace;font-size:.7rem;letter-spacing:.08em;padding:.2rem .5rem;position:absolute;top:1rem;right:1rem}
+.bok{color:var(--green);border:1px solid var(--green)}
+.bng{color:var(--red);border:1px solid var(--red)}
+#result{display:none;border:1px solid var(--green);background:var(--surface);padding:2.5rem 2rem;text-align:center}
+.rscore{font-family:'Inconsolata',monospace;font-size:3.5rem;font-weight:900;color:var(--green);text-shadow:0 0 30px rgba(0,255,65,.6);line-height:1;margin-bottom:.3rem}
+.rlabel{font-family:'Inconsolata',monospace;font-size:.8rem;color:var(--muted);letter-spacing:.15em;margin-bottom:1.5rem}
+.rmsg{font-size:1.05rem;color:var(--white);margin-bottom:2rem;line-height:1.6}
+.btn{font-family:'Inconsolata',monospace;font-size:.9rem;font-weight:700;letter-spacing:.1em;color:var(--bg);background:var(--green);border:none;padding:.8rem 2.5rem;cursor:pointer;transition:all .2s;text-transform:uppercase}
+.btn:hover{background:#00dd38;box-shadow:0 0 20px rgba(0,255,65,.4)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.cursor{display:inline-block;width:8px;height:1em;background:var(--green);vertical-align:text-bottom;animation:blink 1s step-end infinite;margin-left:2px}
+@media(max-width:520px){.pbar{width:120px}header{padding:1rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="htitle">Chapter 5 Quiz<span class="cursor"></span></div>
+    <div class="hsub">> CPUスケジューリング：戦略・アルゴリズム・アーキテクチャ — 全12問</div>
+  </header>
+  <div class="scorebar">
+    <span>SCORE: <span class="sval" id="sd">0</span> / <span id="td">12</span></span>
+    <div style="display:flex;align-items:center;gap:.8rem">
+      <span id="qc">Q 0/12</span>
+      <div class="pbar"><div class="pfill" id="prog" style="width:0%"></div></div>
+    </div>
+  </div>
+  <div id="qa"></div>
+  <div id="result"></div>
+</div>
+<script>
+const Q=[
+  {
+    q:"CPUスケジューリングが必要な根本的な理由として最も正しいのはどれか？",
+    opts:[
+      "プロセスは常にCPUを100%使い続けるため、公平に分配する必要があるから",
+      "プロセスはCPUバーストとI/O待ちを繰り返し、I/O待ちの間CPUがアイドルになるため、その時間を別のプロセスで埋めてCPU使用率を最大化するため",
+      "マルチコアCPUでは複数プロセスが同時に動くため、衝突を防ぐ調整が必要だから",
+      "プロセスの優先度が違うため、重要なプロセスを先に実行する必要があるから"
+    ],
+    ans:1,
+    exp:"プロセス実行はCPUバーストとI/O待ちの繰り返し（CPU-I/Oバーストサイクル）です。I/O待ち中はCPUが完全にアイドルになります。スケジューラはこの「沈黙」を別のレディプロセスで埋めることでCPU使用率を最大化します。これがマルチプログラミングの核心です。I/Oバウンドプロセスは多くの短いバーストを持ち、CPUバウンドプロセスは少数の長いバーストを持ちます。"
+  },
+  {
+    q:"「スケジューラ」と「ディスパッチャ」の役割の違いとして正しいのはどれか？",
+    opts:[
+      "スケジューラはI/O操作を管理し、ディスパッチャはCPUの電力管理を行う",
+      "スケジューラはレディキューから次に実行するプロセスを『決定』し、ディスパッチャはその選ばれたプロセスに実際にCPUを渡す『実行』をする",
+      "スケジューラとディスパッチャは同じコンポーネントの異なる呼び名である",
+      "スケジューラはユーザーモードで動作し、ディスパッチャはカーネルモードで動作する"
+    ],
+    ans:1,
+    exp:"スケジューラは「意思決定者」：レディキューを見てどのプロセスを次に実行するかを選ぶ。ディスパッチャは「実行者」：スケジューラの決定を実行に移す作業者で、コンテキストスイッチ・ユーザーモードへの切替・選ばれたプロセスのプログラムカウンターへのジャンプを行います。Dispatch Latency（ディスパッチの遅延時間）はオーバーヘッドであり、低いほど良いです。"
+  },
+  {
+    q:"プリエンプティブスケジューリングにおいて「Running → Ready」状態遷移が起こるのはどのような場合か？",
+    opts:[
+      "プロセスがI/O要求を発行して自発的にCPUを手放したとき",
+      "プロセスが exit() を呼び出して終了したとき",
+      "タイムスライスが切れるか高優先度プロセスが到着し、OSが強制的にCPUを取り上げるとき",
+      "プロセスが新しいスレッドを生成するとき"
+    ],
+    ans:2,
+    exp:"Running→Readyはプリエンプション（強制割り込み）によって発生します。①タイムスライス（タイムクォンタム）が切れたとき、②より高い優先度のプロセスが到着したとき、OSがCPUを強制的に取り上げます。Running→Waitingはプロセスが自発的にI/O要求を出したとき（ノンプリエンプティブな状況）。Running→Terminatedはexit()呼び出し時。全ての現代OS（Windows, Linux, macOS, UNIX）はプリエンプティブです。"
+  },
+  {
+    q:"スケジューリングの評価指標「Waiting Time（待ち時間）」の定義として正しいのはどれか？",
+    opts:[
+      "プロセスが投入されてから完了するまでの総時間（待ち＋実行＋I/O）",
+      "リクエスト投入から最初の応答が出るまでの時間",
+      "プロセスがレディキューで待ち続けた時間の合計",
+      "CPUがプロセスを実際に実行した時間の合計"
+    ],
+    ans:2,
+    exp:"Waiting Timeはプロセスがレディキューで待機した時間の合計です。スケジューリングアルゴリズムが最も直接影響を与える指標として重視されます。比較：Turnaround Time（提出から完了までの全時間 ＝ 待ち時間＋実行時間＋I/O時間）、Response Time（リクエストから最初の応答まで、インタラクティブシステムで重要）。一般的に待ち時間と応答時間は最小化、CPU使用率とスループットは最大化が目標です。"
+  },
+  {
+    q:"FCFS（First-Come, First-Served）スケジューリングの「コンボイ効果（Convoy Effect）」とは何か？",
+    opts:[
+      "高優先度プロセスが低優先度プロセスを永遠にブロックし続ける現象",
+      "多数の短いプロセスが長いプロセスの後ろに詰まって待たされ、平均待ち時間が悪化する現象",
+      "プロセスが増えすぎてキューが溢れる現象",
+      "CPUバーストが長くなるにつれてI/O待ちも長くなる現象"
+    ],
+    ans:1,
+    exp:"コンボイ効果はFCFSの致命的な欠点です。長いCPUバーストを持つプロセス（例：P1=24ms）が先頭にいると、後ろの短いプロセス（P2=P3=3ms）が長時間待たされます。例：P1→P2→P3の順では平均待ち時間17ms、P2→P3→P1の順なら3msになります。同じプロセス集合でも到着順次第で大差が出ます。これがインタラクティブシステムにFCFSが不向きな理由です。"
+  },
+  {
+    q:"SJF（Shortest-Job-First）スケジューリングの最大の問題点と、その実用的な解決策の正しい組み合わせはどれか？",
+    opts:[
+      "問題：実装が複雑すぎる　解決策：ハードウェアサポートを使う",
+      "問題：次のCPUバーストの長さを事前に知る方法がない　解決策：過去のバースト履歴を使った指数移動平均で予測する",
+      "問題：短いプロセスが後回しにされ飢餓が発生する　解決策：エージングを使って優先度を上げる",
+      "問題：プリエンプションに対応していない　解決策：タイムクォンタムを設定する"
+    ],
+    ans:1,
+    exp:"SJFは「次のCPUバーストが最短のプロセスを選ぶ」アルゴリズムで、平均待ち時間が理論上最適（provably optimal）です。しかし、実際には次のバーストがどれくらい長いかを事前に知る方法がありません。解決策は指数移動平均：τ(n+1) = α·t(n) + (1-α)·τ(n)。α=0.5がよく使われ、直近の実際のバーストと過去の予測を半々で組み合わせて次バーストを予測します。"
+  },
+  {
+    q:"Round Robin（RR）スケジューリングでタイムクォンタムを「非常に小さく」設定した場合の問題はどれか？",
+    opts:[
+      "全プロセスが同時に終了してしまい、スループットが低下する",
+      "コンテキストスイッチのオーバーヘッドが実際の処理時間を上回り、CPUリソースが無駄になる",
+      "FCFSと同じ動作になり、短いプロセスが長いプロセスを待つことになる",
+      "スケジューラがどのプロセスを選ぶか判断できなくなる"
+    ],
+    ans:1,
+    exp:"RRのタイムクォンタムが小さすぎる問題：コンテキストスイッチのコスト（PCB保存・復元・キャッシュ無効化等）が、実際のCPU処理時間に対して支配的になります。CPU時間のほとんどがオーバーヘッドに費やされ、スループットが激減します。逆にクォンタムが大きすぎる（バーストより大きい）と、FCFSに退化して応答性が失われます。目安：CPUバーストの80%がクォンタムより短くなるよう設定します。"
+  },
+  {
+    q:"優先度スケジューリングにおける「飢餓（Starvation）」とその解決策として正しいのはどれか？",
+    opts:[
+      "飢餓：高優先度プロセスがCPUを使いすぎてメモリが枯渇する　解決策：メモリ制限を設ける",
+      "飢餓：低優先度プロセスが高優先度プロセスの流入によって永遠にCPUを得られない　解決策：エージング（時間経過で優先度を徐々に上げる）",
+      "飢餓：CPUが忙しすぎてI/Oデバイスへのアクセスが遅くなる　解決策：I/Oバッファを増やす",
+      "飢餓：プロセス数が増えすぎてスケジューラが動作できなくなる　解決策：プロセス数に上限を設ける"
+    ],
+    ans:1,
+    exp:"飢餓（Starvation）は優先度スケジューリングの致命的な欠点です。高優先度プロセスが次々と到着し続けると、低優先度プロセスが永遠にCPUを得られない可能性があります（理論上、無限に待つことも）。解決策はエージング（Aging）：待ち時間が長くなるにつれて優先度を徐々に上げていきます。例えば15分待ったら優先度を1上げるなど。これにより、どんな低優先度プロセスも最終的には実行されることが保証されます。"
+  },
+  {
+    q:"マルチレベルフィードバックキューが「マルチレベルキュー」より優れている最大の点はどれか？",
+    opts:[
+      "実装がシンプルで、プロセスの優先度計算が高速にできる",
+      "プロセスがキュー間を移動できるため、CPUバーストの実績に基づいてI/Oバウンドプロセスを高優先キューに、CPUバウンドプロセスを自動的に低優先キューへ降格でき、かつエージングでStarvationを防げる",
+      "全プロセスに同じタイムクォンタムを割り当てられるため公平性が高い",
+      "リアルタイムシステムに特化した設計になっている"
+    ],
+    ans:1,
+    exp:"マルチレベルキュー（固定）は各プロセスが静的に1つのキューに固定されます。マルチレベルフィードバックキュー（動的）はプロセスのCPUバースト実績に基づいてキュー間を移動できます。典型的な構成：Q0（RR, quantum=8ms）→ Q1（RR, quantum=16ms）→ Q2（FCFS）。新ジョブはQ0に入り、8msで終わらなければQ1へ降格。短いバーストのI/Oバウンドプロセスは高優先キューに留まり、長いCPUバウンドプロセスは自動的に低優先へ。エージングでStarvationも防ぎます。"
+  },
+  {
+    q:"SMPシステムで「プロセッサ親和性（Processor Affinity）」を維持しようとする理由はどれか？",
+    opts:[
+      "特定のコアだけにプロセスを集中させてコアの温度を均一に保つため",
+      "スレッドを同じコアで動かし続けることで「ウォームキャッシュ」の恩恵を受けるため。別コアに移行するとキャッシュが無効化され、メインメモリからの再読み込みが必要になるため",
+      "コア間のデータ転送帯域幅を最大限に活用するため",
+      "OSのスケジューラが単純になりディスパッチレイテンシを下げられるため"
+    ],
+    ans:1,
+    exp:"プロセッサ親和性の理由はキャッシュ効率です。スレッドが同じコアで動き続けると、そのコアのL1/L2キャッシュにデータが「温まった」状態（ウォームキャッシュ）を維持できます。別のコアに移行（マイグレーション）すると、キャッシュが無効化され、必要なデータをメインメモリから再度読み込む必要があり、大幅な遅延が発生します。NUMAシステムではさらに深刻で、別ノードのメモリへのアクセスは著しく遅くなります（NUMAペナルティ）。負荷分散とは本質的にトレードオフの関係にあります。"
+  },
+  {
+    q:"Linux CFS（Completely Fair Scheduler）の「vruntime（仮想実行時間）」の仕組みとして正しいのはどれか？",
+    opts:[
+      "vruntimeは固定タイムスライスのカウンターで、0になったらプロセスがCPUを解放する",
+      "vruntimeは各タスクの累積実行時間をnice値で重み付けしたもの。CFSは常にvruntimeが最小のタスクを選び実行する。高優先タスクはvruntimeの蓄積が遅いため、より多くのCPU時間を得る",
+      "vruntimeはプロセスが待ったトータル時間で、最も長く待ったプロセスが選ばれる",
+      "vruntimeはカーネルがランダムに割り当てる数値で、公平なスケジューリングに使う"
+    ],
+    ans:1,
+    exp:"CFS（Completely Fair Scheduler）は固定タイムスライスを使わず、各タスクにCPU時間の「公平な割合」を与えます。vruntimeはnice値（-20〜+19）で重み付けされた仮想実行時間。高優先タスク（低nice値）はvruntimeの増加が遅く、より多くのCPU時間を獲得します。CFSは常にvruntimeが最小のタスク（最もCPUを得ていないタスク）を選びます。I/Oバウンドタスクはよく眠るためvruntimeが低く保たれ、起床時に即座に実行されることでインタラクティブな応答性を実現します。"
+  },
+  {
+    q:"ハードリアルタイムスケジューリングの「EDF（Earliest-Deadline-First）」がRMS（Rate-Monotonic Scheduling）より優れている点はどれか？",
+    opts:[
+      "EDF は静的優先度を使うため実装が単純で、RMSより処理速度が速い",
+      "EDF は動的優先度（締め切りが近いほど高優先）を使い、理論上CPU使用率100%まで対応可能。RMSは静的優先度で最悪ケースの上限が約69%",
+      "EDF は周期タスクに特化しており、RMSより厳密な締め切り保証ができる",
+      "EDF はカーネルレベルで実装されており、RMSよりコンテキストスイッチコストが低い"
+    ],
+    ans:1,
+    exp:"EDF（Earliest-Deadline-First）は動的優先度を使います。各タスクが実行可能になるたびに、直近の締め切りが最も早いタスクに最高優先度を与えます。理論上最適で、CPU使用率を100%まで使い切れます。RMS（Rate-Monotonic Scheduling）は静的優先度（短周期ほど高優先）を使います。静的優先度アルゴリズムの中では最適ですが、CPU使用率の上限が多数プロセス時に約69%に収束するという限界があります（RMSで失敗する場合、他の静的アルゴリズムも必ず失敗します）。"
+  }
+];
+
+let answered=new Array(Q.length).fill(null);
+let score=0;
+
+function render(){
+  const area=document.getElementById('qa');
+  area.innerHTML='';
+  Q.forEach((q,qi)=>{
+    const card=document.createElement('div');
+    card.className='qcard';
+    card.style.animationDelay=(qi*.04)+'s';
+    card.id='q'+qi;
+    const done=answered[qi]!==null;
+    const ok=done&&answered[qi]===q.ans;
+    if(done) card.classList.add(ok?'ok':'ng');
+    const badge=done?`<span class="badge ${ok?'bok':'bng'}">${ok?'✓ CORRECT':'✗ WRONG'}</span>`:'';
+    const opts=q.opts.map((o,oi)=>{
+      let cls='opt';
+      if(done){if(oi===q.ans)cls+=' correct';else if(oi===answered[qi])cls+=' wrong';}
+      return `<button class="${cls}" onclick="answer(${qi},${oi})" ${done?'disabled':''}><span class="okey">${String.fromCharCode(65+oi)}.</span><span>${o}</span></button>`;
+    }).join('');
+    const ecls='exp'+(done?' show':'')+(done&&!ok?' wexp':'');
+    card.innerHTML=`${badge}<div class="qnum">> Q${String(qi+1).padStart(2,'0')}</div><div class="qtext">${q.q}</div><div class="opts">${opts}</div><div class="${ecls}"><strong style="font-family:Inconsolata,monospace;font-size:.75rem;letter-spacing:.08em;">> 解説</strong><br>${q.exp}</div>`;
+    area.appendChild(card);
+  });
+  updateHUD();
+  if(answered.every(a=>a!==null)) setTimeout(showResult,600);
+}
+
+function answer(qi,oi){
+  if(answered[qi]!==null)return;
+  answered[qi]=oi;
+  if(oi===Q[qi].ans)score++;
+  render();
+  const next=answered.indexOf(null);
+  if(next!==-1) setTimeout(()=>document.getElementById('q'+next)?.scrollIntoView({behavior:'smooth',block:'center'}),300);
+}
+
+function updateHUD(){
+  const done=answered.filter(a=>a!==null).length;
+  document.getElementById('sd').textContent=score;
+  document.getElementById('qc').textContent=`Q ${done}/${Q.length}`;
+  document.getElementById('prog').style.width=(done/Q.length*100)+'%';
+}
+
+function showResult(){
+  document.getElementById('qa').style.display='none';
+  const rs=document.getElementById('result');
+  rs.style.display='block';
+  const pct=Math.round(score/Q.length*100);
+  const[msg,color]=pct===100?['完璧！CPUスケジューリングの全概念を完全に習得しています。','var(--green)']
+    :pct>=80?['よくできました！解説を読んでさらに理解を深めましょう。','var(--green)']
+    :pct>=60?['半分以上正解！苦手な問題の解説を確認してみてください。','var(--amber)']
+    :['もう一度Chapter 5のノートを読み返してから再挑戦しましょう。','var(--red)'];
+  rs.innerHTML=`<div class="rscore" style="color:${color}">${score}<span style="font-size:1.8rem;opacity:.5">/${Q.length}</span></div><div class="rlabel">FINAL SCORE — ${pct}%</div><div class="rmsg">${msg}</div><button class="btn" onclick="retry()">[ RETRY ]</button>`;
+  rs.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function retry(){
+  answered=new Array(Q.length).fill(null);
+  score=0;
+  document.getElementById('qa').style.display='block';
+  document.getElementById('result').style.display='none';
+  render();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+render();
+</script>
+</body>
+</html>
