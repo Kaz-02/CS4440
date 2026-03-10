@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java Basics — CS3035</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Fira+Code:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161e;
+    --surface2: #1a1e2a;
+    --border: #252a38;
+    --accent: #f97316;
+    --accent2: #fb923c;
+    --accent3: #34d399;
+    --accent4: #60a5fa;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --code-bg: #0a0c10;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Lora', serif;
+    line-height: 1.7;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 55% 40% at 15% 10%, rgba(249,115,22,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 85% 85%, rgba(96,165,250,0.06) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 6rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    padding: 4rem 0 3rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 3rem;
+  }
+
+  .course-tag {
+    display: inline-block;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    background: rgba(249,115,22,0.1);
+    border: 1px solid rgba(249,115,22,0.25);
+    padding: 0.3rem 0.9rem;
+    border-radius: 2px;
+    margin-bottom: 1.2rem;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    background: linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.8rem;
+  }
+
+  header p { color: var(--muted); font-size: 0.95rem; font-style: italic; }
+
+  /* TOC */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .toc-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+
+  .toc ol {
+    list-style: none;
+    counter-reset: toc;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem 1.5rem;
+  }
+
+  .toc li {
+    counter-increment: toc;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .toc li::before {
+    content: counter(toc, decimal-leading-zero);
+    font-family: 'Fira Code', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  .toc a { color: var(--text); text-decoration: none; font-size: 0.9rem; transition: color 0.2s; }
+  .toc a:hover { color: var(--accent); }
+
+  /* Sections */
+  .section { margin-bottom: 3rem; animation: fadeUp 0.5s ease both; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+
+  .section-num {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    flex-shrink: 0;
+    padding-top: 2px;
+  }
+
+  h2 { font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 700; color: #fff; }
+
+  .section-body {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.8rem 2rem;
+  }
+
+  p { margin-bottom: 1rem; color: #c4cdd8; font-size: 0.97rem; }
+  p:last-child { margin-bottom: 0; }
+
+  /* Cards */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.1rem 1.2rem;
+  }
+
+  .card-label { font-family: 'Fira Code', monospace; font-size: 0.73rem; color: var(--accent); margin-bottom: 0.4rem; display: block; }
+  .card-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem; }
+  .card p { font-size: 0.84rem; margin: 0; }
+
+  /* Code */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.2rem 1.5rem;
+    overflow-x: auto;
+    margin: 1.2rem 0;
+  }
+
+  pre code {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.84rem;
+    line-height: 1.7;
+    color: #c9d1d9;
+  }
+
+  .code-label { font-family: 'Fira Code', monospace; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 0.4rem; display: block; }
+
+  /* Syntax highlighting */
+  .kw { color: #ff7b72; }
+  .ty { color: #79c0ff; }
+  .fn { color: #d2a8ff; }
+  .st { color: #a5d6ff; }
+  .cm { color: #8b949e; font-style: italic; }
+  .nu { color: #f0883e; }
+  .cl { color: #ffa657; }
+  .ok { color: #3fb950; }
+  .er { color: #f85149; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.88rem; }
+  th { font-family: 'Syne', sans-serif; font-weight: 600; text-align: left; padding: 0.7rem 1rem; background: var(--surface2); color: var(--accent); font-size: 0.8rem; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); }
+  td { padding: 0.65rem 1rem; border-bottom: 1px solid rgba(37,42,56,0.6); color: #c4cdd8; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  /* Badges */
+  .badge { font-family: 'Fira Code', monospace; font-size: 0.78rem; padding: 0.2rem 0.6rem; border-radius: 3px; display: inline-block; }
+  .badge-orange { background: rgba(249,115,22,0.15); color: #fb923c; border: 1px solid rgba(249,115,22,0.25); }
+  .badge-blue   { background: rgba(96,165,250,0.12); color: #60a5fa; border: 1px solid rgba(96,165,250,0.2); }
+  .badge-green  { background: rgba(52,211,153,0.12); color: #34d399; border: 1px solid rgba(52,211,153,0.2); }
+
+  /* Callout */
+  .callout {
+    border-left: 3px solid var(--accent4);
+    background: rgba(96,165,250,0.07);
+    border-radius: 0 6px 6px 0;
+    padding: 0.9rem 1.2rem;
+    margin: 1.2rem 0;
+    font-size: 0.9rem;
+    color: #93c5fd;
+  }
+  .callout strong { color: var(--accent4); font-family: 'Syne', sans-serif; }
+
+  .warn {
+    border-left: 3px solid #f59e0b;
+    background: rgba(245,158,11,0.07);
+    border-radius: 0 6px 6px 0;
+    padding: 0.9rem 1.2rem;
+    margin: 1.2rem 0;
+    font-size: 0.9rem;
+    color: #fcd34d;
+  }
+  .warn strong { color: #f59e0b; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 1.6rem 0; }
+
+  /* Two-column compare */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
+
+  .col-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem 1.2rem;
+  }
+
+  .col-box h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 0.6rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .col-box.orange h4 { color: var(--accent); }
+  .col-box.blue h4   { color: var(--accent4); }
+
+  .col-box pre { margin: 0; border: none; padding: 0; background: transparent; }
+  .col-box pre code { font-size: 0.8rem; }
+
+  /* Naming convention pill list */
+  .naming-list { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1rem; }
+  .naming-row { display: flex; align-items: center; gap: 1rem; }
+  .naming-pill {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.78rem;
+    padding: 0.25rem 0.8rem;
+    border-radius: 20px;
+    flex-shrink: 0;
+    min-width: 120px;
+    text-align: center;
+  }
+  .np-orange { background: rgba(249,115,22,0.15); color: #fb923c; border: 1px solid rgba(249,115,22,0.25); }
+  .np-blue   { background: rgba(96,165,250,0.12); color: #60a5fa; border: 1px solid rgba(96,165,250,0.2); }
+  .np-green  { background: rgba(52,211,153,0.12); color: #34d399; border: 1px solid rgba(52,211,153,0.2); }
+  .np-purple { background: rgba(167,139,250,0.12); color: #a78bfa; border: 1px solid rgba(167,139,250,0.2); }
+  .naming-example { font-family: 'Fira Code', monospace; font-size: 0.82rem; color: #e2e8f0; }
+  .naming-desc { font-size: 0.83rem; color: var(--muted); }
+
+  /* Directory tree */
+  .tree {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.85rem;
+    color: #c4cdd8;
+    line-height: 2;
+    padding: 1rem 1.5rem;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-top: 1rem;
+  }
+
+  .tree .dir { color: var(--accent4); }
+  .tree .file { color: var(--accent3); }
+
+  /* Import section */
+  .import-options { display: flex; flex-direction: column; gap: 0.8rem; margin-top: 1rem; }
+  .import-opt {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.8rem 1.2rem;
+  }
+  .import-opt code { font-family: 'Fira Code', monospace; font-size: 0.83rem; color: #a5d6ff; flex: 1; }
+  .import-opt .desc { font-size: 0.82rem; color: var(--muted); white-space: nowrap; }
+
+  @media (max-width: 600px) {
+    .toc ol, .two-col { grid-template-columns: 1fr; }
+    .naming-row { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="course-tag">CS3035 — Programming Paradigms</div>
+    <h1>Java Basics</h1>
+    <p>Study notes · Chengyu Sun · Cal State LA</p>
+  </header>
+
+  <!-- TOC -->
+  <nav class="toc">
+    <div class="toc-title">Contents</div>
+    <ol>
+      <li><a href="#about">About Java</a></li>
+      <li><a href="#hello">Hello World</a></li>
+      <li><a href="#comments">Comments</a></li>
+      <li><a href="#types">Types & Literals</a></li>
+      <li><a href="#arrays">Arrays</a></li>
+      <li><a href="#naming">Naming Conventions</a></li>
+      <li><a href="#var">Type Inference (var)</a></li>
+      <li><a href="#operators">Operators & Expressions</a></li>
+      <li><a href="#statements">Statements</a></li>
+      <li><a href="#class">Classes & Methods</a></li>
+      <li><a href="#properties">Properties</a></li>
+      <li><a href="#packages">Packages & Imports</a></li>
+    </ol>
+  </nav>
+
+  <!-- 1. About Java -->
+  <section class="section" id="about">
+    <div class="section-header"><span class="section-num">01</span><h2>About Java</h2></div>
+    <div class="section-body">
+      <div class="cards">
+        <div class="card">
+          <span class="card-label">Popularity</span>
+          <div class="card-title">#4 TIOBE · #7 SO 2025</div>
+          <p>One of the most widely used languages worldwide, consistently in the top tier.</p>
+        </div>
+        <div class="card">
+          <span class="card-label">Origin</span>
+          <div class="card-title">Born 1995</div>
+          <p>Was <em>the</em> OOP language when invented. Still dominant in enterprise systems.</p>
+        </div>
+        <div class="card">
+          <span class="card-label">Strength</span>
+          <div class="card-title">Mission-critical</div>
+          <p>Chosen for performance, mature frameworks, and a massive ecosystem.</p>
+        </div>
+        <div class="card">
+          <span class="card-label">JVM ecosystem</span>
+          <div class="card-title">Foundation for many</div>
+          <p>Kotlin, Scala, Groovy, and others all run on the Java Virtual Machine.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Hello World -->
+  <section class="section" id="hello">
+    <div class="section-header"><span class="section-num">02</span><h2>Hello World in Java</h2></div>
+    <div class="section-body">
+      <span class="code-label">Java</span>
+      <pre><code><span class="kw">class</span> <span class="cl">Hello</span> {
+  <span class="kw">public static void</span> <span class="fn">main</span>(<span class="ty">String</span>[] args) {
+    <span class="ty">System</span>.out.<span class="fn">println</span>(<span class="st">"Hello, World!"</span>);
+  }
+}</code></pre>
+      <div class="cards" style="margin-top:1.2rem">
+        <div class="card">
+          <span class="card-label">Rule 01</span>
+          <div class="card-title">Must wrap in a class</div>
+          <p>Java has no standalone functions. Everything lives inside a class. The class name doesn't matter for Hello World.</p>
+        </div>
+        <div class="card">
+          <span class="card-label">Rule 02</span>
+          <div class="card-title">main() signature is fixed</div>
+          <p>Must be <code>public static void main(String[] args)</code> exactly — the JVM looks for this specific signature.</p>
+        </div>
+        <div class="card">
+          <span class="card-label">Rule 03</span>
+          <div class="card-title">static = class-level</div>
+          <p><code>static</code> means the method belongs to the class itself, not an instance — so the JVM can call it without creating an object.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Comments -->
+  <section class="section" id="comments">
+    <div class="section-header"><span class="section-num">03</span><h2>Comments</h2></div>
+    <div class="section-body">
+      <div class="cards">
+        <div class="card">
+          <span class="card-label">Single-line</span>
+          <div class="card-title">// comment</div>
+          <p>Everything after <code>//</code> on a line is ignored by the compiler.</p>
+        </div>
+        <div class="card">
+          <span class="card-label">Multi-line</span>
+          <div class="card-title">/* comment */</div>
+          <p>Spans multiple lines. Useful for temporarily disabling blocks of code.</p>
+        </div>
+        <div class="card">
+          <span class="card-label">JavaDoc</span>
+          <div class="card-title">/** comment */</div>
+          <p>Used to generate API documentation automatically. Place above classes, methods, and fields.</p>
+        </div>
+      </div>
+      <span class="code-label" style="margin-top:1.2rem">JavaDoc example</span>
+      <pre><code><span class="cm">/**
+ * Represents a simple bank account.
+ * @author Chengyu Sun
+ */</span>
+<span class="kw">public class</span> <span class="cl">BankAccount</span> {
+  …
+}</code></pre>
+    </div>
+  </section>
+
+  <!-- 4. Types & Literals -->
+  <section class="section" id="types">
+    <div class="section-header"><span class="section-num">04</span><h2>Types &amp; Literals</h2></div>
+    <div class="section-body">
+      <p>Java has two categories of types. Every primitive type has a corresponding <strong>wrapper class</strong>:</p>
+      <table>
+        <thead>
+          <tr><th>Primitive</th><th>Wrapper Class</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="badge badge-orange">byte</span></td><td><span class="badge badge-blue">Byte</span></td><td>8-bit integer</td></tr>
+          <tr><td><span class="badge badge-orange">short</span></td><td><span class="badge badge-blue">Short</span></td><td>16-bit integer</td></tr>
+          <tr><td><span class="badge badge-orange">int</span></td><td><span class="badge badge-blue">Integer</span></td><td>32-bit integer (most common)</td></tr>
+          <tr><td><span class="badge badge-orange">long</span></td><td><span class="badge badge-blue">Long</span></td><td>64-bit integer</td></tr>
+          <tr><td><span class="badge badge-orange">float</span></td><td><span class="badge badge-blue">Float</span></td><td>32-bit floating point</td></tr>
+          <tr><td><span class="badge badge-orange">double</span></td><td><span class="badge badge-blue">Double</span></td><td>64-bit floating point (preferred)</td></tr>
+          <tr><td><span class="badge badge-orange">char</span></td><td><span class="badge badge-blue">Character</span></td><td>Single Unicode character</td></tr>
+          <tr><td><span class="badge badge-orange">boolean</span></td><td><span class="badge badge-blue">Boolean</span></td><td>true or false only</td></tr>
+          <tr><td>—</td><td><span class="badge badge-green">String</span></td><td>Class type; no primitive equivalent</td></tr>
+          <tr><td>—</td><td><span class="badge badge-green">array</span></td><td>Object in Java</td></tr>
+        </tbody>
+      </table>
+
+      <hr>
+      <p><strong>Key differences between Primitive vs Class types:</strong></p>
+      <table>
+        <thead><tr><th>Feature</th><th>Primitive</th><th>Class (Reference)</th></tr></thead>
+        <tbody>
+          <tr><td>Stores</td><td>Value directly</td><td>Reference (pointer) to object</td></tr>
+          <tr><td>Nullable?</td><td>No</td><td>Yes — can be <code>null</code></td></tr>
+          <tr><td>Has methods?</td><td>No</td><td>Yes</td></tr>
+          <tr><td>Conversion</td><td>Auto-boxing → class type</td><td>Auto-unboxing → primitive</td></tr>
+        </tbody>
+      </table>
+
+      <hr>
+      <p><strong>Literal examples:</strong></p>
+      <pre><code><span class="cm">// Integer literals (different bases)</span>
+<span class="kw">int</span> decimal = <span class="nu">123</span>;
+<span class="kw">int</span> hex     = <span class="nu">0x10</span>;   <span class="cm">// hexadecimal</span>
+<span class="kw">int</span> octal   = <span class="nu">010</span>;    <span class="cm">// octal</span>
+<span class="kw">int</span> binary  = <span class="nu">0b10</span>;   <span class="cm">// binary</span>
+<span class="kw">long</span> big    = <span class="nu">10l</span>;    <span class="cm">// long suffix</span>
+
+<span class="cm">// Floating point</span>
+<span class="kw">double</span> d = <span class="nu">-4.56</span>;
+<span class="kw">double</span> e = <span class="nu">1.5e3</span>;    <span class="cm">// scientific notation = 1500.0</span>
+<span class="kw">float</span>  f = <span class="nu">3.14f</span>;    <span class="cm">// float suffix required</span>
+
+<span class="cm">// Other</span>
+<span class="kw">char</span>    c = <span class="st">'A'</span>;
+<span class="ty">String</span>  s = <span class="st">"hello"</span>;
+<span class="kw">boolean</span> b = <span class="kw">true</span>;
+<span class="ty">Object</span>  o = <span class="kw">null</span>;    <span class="cm">// any class type can be null</span></code></pre>
+    </div>
+  </section>
+
+  <!-- 5. Arrays -->
+  <section class="section" id="arrays">
+    <div class="section-header"><span class="section-num">05</span><h2>Arrays</h2></div>
+    <div class="section-body">
+      <span class="code-label">Declaration, initialization & allocation</span>
+      <pre><code><span class="kw">int</span>[] a;                  <span class="cm">// declare (preferred style)</span>
+<span class="kw">int</span>[] b = {<span class="nu">1</span>, <span class="nu">2</span>, <span class="nu">3</span>};      <span class="cm">// declare + initialize with values</span>
+<span class="kw">int</span>   c[<span class="nu">10</span>];              <span class="er">// ❌ SYNTAX ERROR — size not allowed here</span>
+a = <span class="kw">new int</span>[<span class="nu">5</span>];           <span class="cm">// allocate: creates array object of size 5</span></code></pre>
+
+      <div class="warn"><strong>⚠ Common mistake:</strong> You cannot put the array size inside the brackets at declaration time (<code>int c[10]</code> is a compile error). Allocate with <code>new</code>.</div>
+
+      <hr>
+      <p><strong>Anonymous array</strong> — create and pass an array inline without naming it:</p>
+      <span class="code-label">Java</span>
+      <pre><code><span class="fn">printNumbers</span>( <span class="kw">new int</span>[]{<span class="nu">1</span>, <span class="nu">2</span>, <span class="nu">3</span>} );
+<span class="cm">// Similar to "compound literal" in C</span></code></pre>
+    </div>
+  </section>
+
+  <!-- 6. Naming Conventions -->
+  <section class="section" id="naming">
+    <div class="section-header"><span class="section-num">06</span><h2>Identifiers &amp; Naming Conventions</h2></div>
+    <div class="section-body">
+      <p>An identifier may contain letters, digits, <code>$</code>, and <code>_</code> — but <strong>cannot start with a digit</strong>.</p>
+      <div class="naming-list" style="margin-top:1.2rem">
+        <div class="naming-row">
+          <span class="naming-pill np-orange">PascalCase</span>
+          <span class="naming-example">BankAccount, MyInterface</span>
+          <span class="naming-desc">→ Classes &amp; Interfaces</span>
+        </div>
+        <div class="naming-row">
+          <span class="naming-pill np-blue">camelCase</span>
+          <span class="naming-example">interestRate, setName()</span>
+          <span class="naming-desc">→ Variables &amp; Methods</span>
+        </div>
+        <div class="naming-row">
+          <span class="naming-pill np-green">UPPER_CASE</span>
+          <span class="naming-example">MAX_SIZE, PI</span>
+          <span class="naming-desc">→ Constants (static final)</span>
+        </div>
+        <div class="naming-row">
+          <span class="naming-pill np-purple">lowercase</span>
+          <span class="naming-example">edu.calstatela.cs3035</span>
+          <span class="naming-desc">→ Packages (reverse URL)</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. var -->
+  <section class="section" id="var">
+    <div class="section-header"><span class="section-num">07</span><h2>Type Inference with <code style="font-size:1.3rem">var</code></h2></div>
+    <div class="section-body">
+      <p>Since <strong>Java 10</strong>, you can use <code>var</code> and let the compiler infer the type. Java is still statically typed — the type is fixed at compile time.</p>
+      <div class="two-col">
+        <div class="col-box orange">
+          <h4>Before Java 10 (explicit)</h4>
+          <pre><code><span class="kw">int</span>    x     = <span class="nu">10</span>;
+<span class="kw">double</span> price = <span class="nu">9.99</span>;
+<span class="ty">String</span> name  = <span class="st">"John"</span>;
+<span class="cl">User</span>   user  = <span class="kw">new</span> <span class="cl">User</span>();</code></pre>
+        </div>
+        <div class="col-box blue">
+          <h4>Java 10+ (var)</h4>
+          <pre><code><span class="kw">var</span> x     = <span class="nu">10</span>;
+<span class="kw">var</span> price = <span class="nu">9.99</span>;
+<span class="kw">var</span> name  = <span class="st">"John"</span>;
+<span class="kw">var</span> user  = <span class="kw">new</span> <span class="cl">User</span>();</code></pre>
+        </div>
+      </div>
+      <div class="callout" style="margin-top:1.2rem"><strong>Limitation:</strong> <code>var</code> cannot be used where the type cannot be inferred (e.g., uninitialized declarations, method parameters, or return types).</div>
+    </div>
+  </section>
+
+  <!-- 8. Operators & Expressions -->
+  <section class="section" id="operators">
+    <div class="section-header"><span class="section-num">08</span><h2>Operators &amp; Expressions</h2></div>
+    <div class="section-body">
+      <div class="cards">
+        <div class="card"><span class="card-label">Arithmetic</span><div class="card-title">+ - * / % …</div><p>Standard math operators. <code>%</code> is remainder.</p></div>
+        <div class="card"><span class="card-label">Assignment</span><div class="card-title">= += -= …</div><p>Assignment is also an <em>expression</em> in Java (has a value).</p></div>
+        <div class="card"><span class="card-label">Comparison</span><div class="card-title">== != &gt; &gt;= …</div><p>Must produce a true <code>boolean</code> — no truthy/falsy like Python or C.</p></div>
+        <div class="card"><span class="card-label">Increment</span><div class="card-title">++ --</div><p>Pre (<code>++x</code>) increments before use; post (<code>x++</code>) increments after.</p></div>
+        <div class="card"><span class="card-label">Logical</span><div class="card-title">&amp;&amp; || !</div><p>Short-circuit evaluation: <code>&&</code> stops at first false, <code>||</code> at first true.</p></div>
+        <div class="card"><span class="card-label">Conditional</span><div class="card-title">condition ? a : b</div><p>Ternary operator — compact inline if/else expression.</p></div>
+      </div>
+      <div class="warn" style="margin-top:1.2rem"><strong>⚠ Java gotcha:</strong> Boolean expressions <em>must</em> be actual booleans. Unlike Python (<code>if myList:</code>) or C (<code>if (n)</code>), Java will not accept integers or objects as conditions.</div>
+    </div>
+  </section>
+
+  <!-- 9. Statements -->
+  <section class="section" id="statements">
+    <div class="section-header"><span class="section-num">09</span><h2>Statements</h2></div>
+    <div class="section-body">
+      <p>Assignment, branching (<code>if/else</code>, <code>switch</code>), and loops (<code>while</code>, <code>for</code>) work like C. The notable addition is the <strong>for-each</strong> loop:</p>
+      <span class="code-label">Java — for-each</span>
+      <pre><code><span class="kw">int</span>[] numbers = {<span class="nu">1</span>, <span class="nu">2</span>, <span class="nu">3</span>, <span class="nu">4</span>, <span class="nu">5</span>};
+
+<span class="kw">for</span> (<span class="kw">int</span> num : numbers) {         <span class="cm">// for each num in numbers</span>
+  <span class="ty">System</span>.out.<span class="fn">println</span>(num);
+}</code></pre>
+      <div class="callout">The for-each loop works on any array or class implementing <code>Iterable</code> (like <code>ArrayList</code>, <code>Set</code>, etc.).</div>
+    </div>
+  </section>
+
+  <!-- 10. Classes & Methods -->
+  <section class="section" id="class">
+    <div class="section-header"><span class="section-num">10</span><h2>Classes &amp; Methods</h2></div>
+    <div class="section-body">
+      <div class="two-col">
+        <div class="col-box orange">
+          <h4>Java — Dog class</h4>
+          <pre><code><span class="kw">public class</span> <span class="cl">Dog</span> {
+  <span class="kw">private</span> <span class="ty">String</span> name;
+  <span class="kw">private int</span> age;
+
+  <span class="kw">public</span> <span class="fn">Dog</span>(<span class="ty">String</span> name, <span class="kw">int</span> age) {
+    <span class="kw">this</span>.name = name;
+    <span class="kw">this</span>.age  = age;
+  }
+
+  <span class="kw">public void</span> <span class="fn">sit</span>() {
+    <span class="ty">System</span>.out.<span class="fn">println</span>(
+      name + <span class="st">" is now sitting."</span>);
+  }
+
+  <span class="kw">public</span> <span class="ty">String</span> <span class="fn">getName</span>() {
+    <span class="kw">return</span> name;
+  }
+  <span class="kw">public void</span> <span class="fn">setName</span>(<span class="ty">String</span> name) {
+    <span class="kw">this</span>.name = name;
+  }
+}
+
+<span class="kw">var</span> monty = <span class="kw">new</span> <span class="cl">Dog</span>(<span class="st">"Monty"</span>, <span class="nu">2</span>);
+monty.<span class="fn">sit</span>();</code></pre>
+        </div>
+        <div class="col-box blue">
+          <h4>Python — equivalent</h4>
+          <pre><code><span class="kw">class</span> <span class="cl">Dog</span>:
+  <span class="kw">def</span> <span class="fn">__init__</span>(self, name, age):
+    self.name = name
+    self.age  = age
+
+  <span class="kw">def</span> <span class="fn">sit</span>(self):
+    <span class="fn">print</span>(
+      f"{self.name} is now sitting.")
+
+
+monty = <span class="cl">Dog</span>(<span class="st">"Monty"</span>, <span class="nu">2</span>)
+monty.<span class="fn">sit</span>()</code></pre>
+        </div>
+      </div>
+      <hr>
+      <p><strong>Key rules about Java classes &amp; methods:</strong></p>
+      <div class="cards" style="margin-top:0.8rem">
+        <div class="card"><span class="card-label">File rule</span><div class="card-title">One public class per file</div><p>A <code>public</code> class must be in a file with the exact same name, e.g. <code>Dog.java</code>.</p></div>
+        <div class="card"><span class="card-label">Constructor</span><div class="card-title">Same name, no return type</div><p>Constructor name matches the class and has no return type — not even <code>void</code>.</p></div>
+        <div class="card"><span class="card-label">Methods</span><div class="card-title">No defaults, supports overloading</div><p>No default parameter values or keyword arguments, but multiple methods can share a name with different parameter types.</p></div>
+        <div class="card"><span class="card-label">Convention</span><div class="card-title">Private fields + getters/setters</div><p>Fields are typically <code>private</code>; access is provided through public getter/setter methods.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. Properties -->
+  <section class="section" id="properties">
+    <div class="section-header"><span class="section-num">11</span><h2>Properties (Getters &amp; Setters)</h2></div>
+    <div class="section-body">
+      <p>Java defines a "property" by convention — a private field exposed through getter and/or setter methods. The naming convention is critical:</p>
+      <div class="cards">
+        <div class="card"><span class="card-label">Read-only</span><div class="card-title">getter only</div><p>Only a <code>getXxx()</code> method. External code can read but not write.</p></div>
+        <div class="card"><span class="card-label">Write-only</span><div class="card-title">setter only</div><p>Only a <code>setXxx()</code> method. Rarely used.</p></div>
+        <div class="card"><span class="card-label">Read-write</span><div class="card-title">both</div><p>Both getter and setter. The standard case.</p></div>
+        <div class="card"><span class="card-label">Boolean</span><div class="card-title">isXxx()</div><p>Boolean properties use <code>isXxx()</code> instead of <code>getXxx()</code>.</p></div>
+      </div>
+      <span class="code-label" style="margin-top:1.2rem">Java — User class properties</span>
+      <pre><code><span class="kw">class</span> <span class="cl">User</span> {
+  <span class="kw">private</span> <span class="ty">String</span> firstName;   <span class="cm">// property: firstName (read-write)</span>
+  <span class="kw">private</span> <span class="ty">String</span> lastName;    <span class="cm">// property: lastName  (read-write)</span>
+
+  <span class="kw">public</span> <span class="ty">String</span> <span class="fn">getFirstName</span>() { <span class="kw">return</span> firstName; }
+  <span class="kw">public</span> <span class="ty">String</span> <span class="fn">getLastName</span>()  { <span class="kw">return</span> lastName;  }
+  <span class="kw">public</span> <span class="ty">String</span> <span class="fn">getName</span>()      { <span class="kw">return</span> firstName + <span class="st">" "</span> + lastName; }
+  <span class="cm">// "name" is a computed read-only property (no setter)</span>
+}</code></pre>
+      <div class="callout"><strong>Pro tip:</strong> Let your IDE (IntelliJ, Eclipse, VS Code) generate getters and setters automatically — it avoids typos and saves time.</div>
+    </div>
+  </section>
+
+  <!-- 12. Packages & Imports -->
+  <section class="section" id="packages">
+    <div class="section-header"><span class="section-num">12</span><h2>Packages &amp; Imports</h2></div>
+    <div class="section-body">
+      <p>Java classes should live inside <strong>packages</strong>. Packages use the <em>reverse URL</em> naming convention — from general to specific:</p>
+      <span class="code-label">URL vs Package naming</span>
+      <pre><code><span class="cm">// URL:     cs.calstatela.edu        (specific → general)</span>
+<span class="cm">// Package: edu.calstatela.cs.cs3035.animal  (general → specific)</span>
+
+<span class="kw">package</span> edu.calstatela.cs.cs3035.animal;
+
+<span class="kw">public class</span> <span class="cl">Dog</span> {
+  <span class="kw">private</span> <span class="ty">String</span> name;
+  <span class="kw">private int</span> age;
+  …
+}</code></pre>
+
+      <hr>
+      <p><strong>Package structure must mirror directory structure:</strong></p>
+      <div class="tree">
+        <span class="dir">src/</span><br>
+        &nbsp;&nbsp;<span class="dir">edu/</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">calstatela/</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">cs/</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">cs3035/</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">animal/</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">Dog.java</span>
+      </div>
+
+      <hr>
+      <p><strong>Importing classes from packages:</strong></p>
+      <div class="import-options">
+        <div class="import-opt">
+          <code>import edu.calstatela.cs.cs3035.animal.Dog;</code>
+          <span class="desc">Import specific class</span>
+        </div>
+        <div class="import-opt">
+          <code>import edu.calstatela.cs.cs3035.animal.*;</code>
+          <span class="desc">Import everything (not sub-packages)</span>
+        </div>
+        <div class="import-opt">
+          <code>edu.calstatela.cs.cs3035.animal.Dog myDog = …</code>
+          <span class="desc">No import — use fully qualified name</span>
+        </div>
+      </div>
+      <div class="callout" style="margin-top:1rem"><strong>Note:</strong> <code>import *</code> imports all classes in a package but <em>not</em> its sub-packages. Sub-packages must be imported separately.</div>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

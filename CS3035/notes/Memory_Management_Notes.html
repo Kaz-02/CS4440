@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memory Management — CS3035 Study Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f0d1a;
+    --paper: #f5f2eb;
+    --accent: #6b21e8;
+    --accent2: #e8213a;
+    --accent3: #21a8e8;
+    --green: #16a34a;
+    --orange: #ea580c;
+    --muted: #8a86a0;
+    --rule: #d4cecc;
+    --code-bg: #1a1628;
+    --code-fg: #e2deff;
+    --note-bg: #fff8e8;
+    --warn-bg: #fff1f1;
+    --tag-bg: #ede8ff;
+    --tag-fg: #5a1ec8;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Lora', Georgia, serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.7;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+      transparent, transparent 27px, var(--rule) 27px, var(--rule) 28px
+    );
+    opacity: 0.3;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 60px 40px 100px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    border-left: 6px solid var(--accent);
+    padding: 12px 0 12px 28px;
+    margin-bottom: 52px;
+    animation: slideIn .5s ease both;
+  }
+  .course-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.2rem, 5vw, 3.6rem);
+    font-weight: 800;
+    line-height: 1.05;
+  }
+  h1 span { color: var(--accent); }
+  .subtitle { font-style: italic; color: var(--muted); font-size: .95rem; margin-top: 8px; }
+
+  /* ── SECTIONS ── */
+  section { margin-bottom: 52px; animation: fadeUp .45s ease both; }
+  section:nth-child(2)  { animation-delay:.05s }
+  section:nth-child(3)  { animation-delay:.10s }
+  section:nth-child(4)  { animation-delay:.15s }
+  section:nth-child(5)  { animation-delay:.20s }
+  section:nth-child(6)  { animation-delay:.25s }
+  section:nth-child(7)  { animation-delay:.30s }
+  section:nth-child(8)  { animation-delay:.35s }
+  section:nth-child(9)  { animation-delay:.40s }
+  section:nth-child(10) { animation-delay:.45s }
+  section:nth-child(11) { animation-delay:.50s }
+
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--ink);
+  }
+  .sec-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  h2 { font-family: 'Syne', sans-serif; font-size: 1.35rem; font-weight: 700; }
+
+  p { margin-bottom: .8em; font-size: .97rem; }
+
+  ul { list-style: none; margin: 10px 0 14px; }
+  ul li { position: relative; padding-left: 22px; margin-bottom: 6px; font-size: .95rem; }
+  ul li::before { content: '◆'; position: absolute; left: 0; color: var(--accent); font-size: .6rem; top: 6px; }
+
+  /* ── CODE ── */
+  .lang-label { font-family: 'JetBrains Mono', monospace; font-size: .7rem; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .82rem;
+    line-height: 1.7;
+    padding: 20px 24px;
+    border-radius: 4px;
+    margin: 14px 0;
+    overflow-x: auto;
+    border-left: 3px solid var(--accent);
+  }
+  .kw  { color: #c792ea; }
+  .fn  { color: #82aaff; }
+  .str { color: #c3e88d; }
+  .cm  { color: #546e7a; font-style: italic; }
+  .tp  { color: #ffcb6b; }
+  .nb  { color: #f78c6c; }
+  .danger { color: #ff5370; }
+  ic { font-family: 'JetBrains Mono', monospace; background: #ede8ff; color: #5a1ec8; padding: 1px 6px; border-radius: 3px; font-size: .88em; }
+
+  /* ── CALLOUTS ── */
+  .note { background: var(--note-bg); border-left: 4px solid #f0c040; padding: 12px 16px; font-size: .88rem; margin: 14px 0; border-radius: 0 4px 4px 0; }
+  .note::before { content: '💡 '; }
+  .warn { background: var(--warn-bg); border-left: 4px solid var(--accent2); padding: 12px 16px; font-size: .88rem; margin: 14px 0; border-radius: 0 4px 4px 0; }
+  .warn::before { content: '⚠️ '; }
+
+  /* ── Q&A ── */
+  .qa { border: 1.5px solid var(--rule); border-radius: 4px; overflow: hidden; margin: 14px 0; }
+  .qa-q { background: var(--ink); color: var(--paper); padding: 10px 16px; font-family: 'Syne', sans-serif; font-size: .88rem; font-weight: 700; }
+  .qa-a { background: #e8f4ff; padding: 12px 16px; font-size: .88rem; }
+
+  /* ── STORAGE CARDS ── */
+  .storage-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    margin: 16px 0;
+  }
+  .storage-card {
+    border-radius: 4px;
+    padding: 18px 16px;
+    border: 1.5px solid var(--rule);
+  }
+  .storage-card .card-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: .9rem;
+    margin-bottom: 8px;
+    letter-spacing: .04em;
+  }
+  .storage-card p { font-size: .85rem; margin-bottom: 4px; }
+  .storage-card .lifetime {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .75rem;
+    margin-top: 10px;
+    padding: 4px 8px;
+    border-radius: 3px;
+    display: inline-block;
+  }
+  .card-static   { border-color: #7c3aed; background: #f5f0ff; }
+  .card-static   .card-title { color: #7c3aed; }
+  .card-static   .lifetime   { background: #ede8ff; color: #5a1ec8; }
+  .card-auto     { border-color: #0369a1; background: #f0f9ff; }
+  .card-auto     .card-title { color: #0369a1; }
+  .card-auto     .lifetime   { background: #dbeafe; color: #1d4ed8; }
+  .card-dynamic  { border-color: #b45309; background: #fffbeb; }
+  .card-dynamic  .card-title { color: #b45309; }
+  .card-dynamic  .lifetime   { background: #fef3c7; color: #92400e; }
+  .card-thread   { border-color: #047857; background: #f0fdf4; }
+  .card-thread   .card-title { color: #047857; }
+  .card-thread   .lifetime   { background: #dcfce7; color: #166534; }
+
+  /* ── MEMORY MAP VISUAL ── */
+  .mem-map {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1.5px solid var(--rule);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 16px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .82rem;
+  }
+  .mem-row {
+    display: flex;
+    align-items: stretch;
+  }
+  .mem-label {
+    width: 130px;
+    flex-shrink: 0;
+    padding: 10px 14px;
+    font-weight: 600;
+    border-right: 1.5px solid var(--rule);
+    display: flex;
+    align-items: center;
+    font-size: .78rem;
+    letter-spacing: .05em;
+  }
+  .mem-content {
+    flex: 1;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    font-size: .8rem;
+    color: #444;
+  }
+  .mem-row.r-stack   .mem-label { background: #dbeafe; color: #1d4ed8; }
+  .mem-row.r-stack   .mem-content { background: #f0f9ff; }
+  .mem-row.r-heap    .mem-label { background: #fef3c7; color: #92400e; }
+  .mem-row.r-heap    .mem-content { background: #fffbeb; }
+  .mem-row.r-static  .mem-label { background: #ede8ff; color: #5a1ec8; }
+  .mem-row.r-static  .mem-content { background: #f5f0ff; }
+  .mem-row.r-code    .mem-label { background: #f1f5f9; color: #475569; }
+  .mem-row.r-code    .mem-content { background: #f8fafc; }
+  .mem-row.r-thread  .mem-label { background: #dcfce7; color: #166534; }
+  .mem-row.r-thread  .mem-content { background: #f0fdf4; }
+  .mem-arrow { text-align: center; padding: 4px; background: #f8fafc; color: var(--muted); font-size: .75rem; border-top: 1px dashed var(--rule); border-bottom: 1px dashed var(--rule); }
+
+  /* ── LINKED LIST VISUAL ── */
+  .ll {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 16px 0;
+    flex-wrap: wrap;
+  }
+  .ll-node {
+    display: flex;
+    border: 2px solid var(--accent3);
+    border-radius: 3px;
+    overflow: hidden;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .85rem;
+  }
+  .ll-val {
+    padding: 8px 14px;
+    background: #e8f4ff;
+    color: #0369a1;
+    font-weight: 600;
+    border-right: 2px solid var(--accent3);
+  }
+  .ll-ptr {
+    padding: 8px 12px;
+    background: #f0f9ff;
+    color: var(--muted);
+  }
+  .ll-arrow { padding: 0 8px; display: flex; align-items: center; color: var(--accent3); font-size: 1.1rem; }
+  .ll-null { font-family: 'JetBrains Mono', monospace; font-size: .85rem; color: var(--accent2); padding: 8px 10px; border: 2px dashed var(--accent2); border-radius: 3px; }
+  .ll-head { font-family: 'JetBrains Mono', monospace; font-size: .75rem; color: var(--muted); margin-bottom: 4px; letter-spacing: .08em; }
+
+  /* ── RELEASE SPECTRUM ── */
+  .spectrum {
+    display: flex;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 14px 0;
+    font-family: 'Syne', sans-serif;
+    font-size: .82rem;
+    font-weight: 700;
+  }
+  .spectrum div { flex: 1; padding: 14px 12px; text-align: center; }
+  .sp-manual    { background: #2d1f5e; color: #c3b8f8; }
+  .sp-semiauto  { background: #1f3a5e; color: #82aaff; }
+  .sp-auto      { background: #1a4a2e; color: #86efac; }
+
+  /* ── GC COMPARISON ── */
+  .gc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0; }
+  .gc-box { padding: 18px 16px; border-radius: 4px; border: 1.5px solid var(--rule); }
+  .gc-box.ref   { border-color: #7c3aed; background: #f5f0ff; }
+  .gc-box.trace { border-color: #047857; background: #f0fdf4; }
+  .gc-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: .9rem;
+    margin-bottom: 10px;
+  }
+  .gc-box.ref   .gc-title { color: #7c3aed; }
+  .gc-box.trace .gc-title { color: #047857; }
+  .gc-box p { font-size: .85rem; margin-bottom: 4px; }
+  .pro  { color: var(--green); }
+  .con  { color: var(--accent2); }
+
+  /* ── REF COUNT VISUAL ── */
+  .ref-table {
+    display: inline-grid;
+    grid-template-columns: auto auto;
+    gap: 0;
+    border: 1.5px solid var(--rule);
+    border-radius: 4px;
+    overflow: hidden;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .82rem;
+    margin: 8px 0 14px;
+  }
+  .ref-table .rh { background: var(--ink); color: var(--paper); padding: 6px 14px; font-weight: 600; font-size: .78rem; letter-spacing: .05em; }
+  .ref-table .rc { padding: 6px 14px; border-top: 1px solid var(--rule); }
+  .ref-table .rc:nth-child(4n+3) { background: #f5f0ff; }
+  .ref-cnt { color: var(--accent); font-weight: 700; }
+
+  /* ── TRACING GRAPH ── */
+  .trace-graph {
+    background: var(--code-bg);
+    padding: 24px;
+    border-radius: 4px;
+    margin: 14px 0;
+    border-left: 3px solid var(--green);
+  }
+  .tg-legend { display: flex; gap: 18px; margin-bottom: 16px; font-family: 'JetBrains Mono', monospace; font-size: .78rem; }
+  .tg-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: middle; }
+  .dot-root  { background: #ff5370; }
+  .dot-reach { background: #c3e88d; }
+  .dot-dead  { background: #546e7a; }
+  .tg-nodes { display: flex; flex-wrap: wrap; gap: 10px; }
+  .tg-node {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .82rem;
+    font-weight: 700;
+  }
+  .n-root  { background: #ff5370; color: #fff; }
+  .n-reach { background: #c3e88d; color: #1a1628; }
+  .n-dead  { background: #3a3a4a; color: #546e7a; border: 2px dashed #546e7a; }
+  .tg-caption { color: #82aaff; font-family: 'JetBrains Mono', monospace; font-size: .78rem; margin-top: 14px; }
+
+  /* ── SUMMARY ── */
+  .summary-section { background: var(--ink); padding: 36px 40px; border-radius: 6px; }
+  .summary-section .sec-head { border-color: var(--accent); }
+  .summary-section h2,
+  .summary-section .sec-num  { color: var(--paper); }
+  .summary-section .sec-num  { color: var(--accent); }
+  .summary-section table { width: 100%; border-collapse: collapse; font-size: .86rem; }
+  .summary-section thead tr { background: var(--accent); }
+  .summary-section thead th { font-family: 'Syne', sans-serif; font-weight: 600; padding: 10px 14px; text-align: left; color: #fff; }
+  .summary-section tbody tr:nth-child(odd)  { background: #1f1b30; color: #ddd8f8; }
+  .summary-section tbody tr:nth-child(even) { background: #272038; color: #ddd8f8; }
+  .summary-section tbody td { padding: 9px 14px; border-bottom: 1px solid #3a3350; vertical-align: top; }
+  .summary-section tbody td:first-child { color: #c3b8f8; font-family: 'Syne', sans-serif; font-weight: 600; }
+
+  /* ── FOOTER ── */
+  footer { margin-top: 60px; padding-top: 20px; border-top: 1.5px solid var(--rule); font-family: 'JetBrains Mono', monospace; font-size: .8rem; color: var(--muted); display: flex; justify-content: space-between; }
+
+  /* ── ANIMATIONS ── */
+  @keyframes slideIn { from { opacity:0; transform:translateX(-20px); } to { opacity:1; transform:translateX(0); } }
+  @keyframes fadeUp  { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
+
+  @media(max-width:600px){
+    .wrap { padding:36px 20px 60px; }
+    .gc-grid { grid-template-columns:1fr; }
+    .storage-grid { grid-template-columns:1fr 1fr; }
+    .summary-section { padding:24px 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="course-tag">CS3035 Programming Paradigms &nbsp;·&nbsp; Cal State LA</p>
+  <h1>Memory <span>Management</span></h1>
+  <p class="subtitle">Study notes compiled from lecture slides</p>
+</header>
+
+<!-- 1. Why Different Storage? -->
+<section>
+  <div class="sec-head"><span class="sec-num">01</span><h2>Why Different Storage Types?</h2></div>
+  <p>Not all data has the same lifetime or size requirements. Consider this C example:</p>
+  <pre><span class="kw">int</span> x = 10;                          <span class="cm">// global → static storage</span>
+
+<span class="kw">int</span>* <span class="fn">foo</span>(<span class="kw">int</span> a[], <span class="kw">int</span> size) {
+    <span class="kw">int</span>* bar = <span class="fn">malloc</span>(size * <span class="kw">sizeof</span>(<span class="kw">int</span>)); <span class="cm">// heap → dynamic storage</span>
+    <span class="kw">for</span> (<span class="kw">int</span> i = 0; i &lt; size; i++)       <span class="cm">// i, size → stack (automatic)</span>
+        bar[i] = a[i] &gt; x ? 1 : 0;
+    <span class="kw">return</span> bar;
+}
+
+<span class="kw">int</span> <span class="fn">main</span>() {
+    <span class="kw">int</span> arr[] = {5, 15, 8, 20};           <span class="cm">// arr → stack (automatic)</span>
+    <span class="kw">int</span>* result = <span class="fn">foo</span>(arr, 4);
+    <span class="kw">return</span> 0;
+}</pre>
+  <div class="qa">
+    <div class="qa-q">❓ Is <ic>bar</ic> stored on the stack or the heap?</div>
+    <div class="qa-a"><strong>Both — in different ways.</strong> The <ic>bar</ic> <em>pointer variable itself</em> lives on the stack (it's a local variable). But the <em>memory it points to</em> — allocated by <ic>malloc()</ic> — lives on the heap. When <ic>foo()</ic> returns, the pointer is gone, but the heap memory persists until you call <ic>free()</ic>.</div>
+  </div>
+</section>
+
+<!-- 2. Four Storage Types -->
+<section>
+  <div class="sec-head"><span class="sec-num">02</span><h2>The Four Storage Types</h2></div>
+
+  <div class="mem-map">
+    <div class="mem-row r-stack">
+      <div class="mem-label">STACK</div>
+      <div class="mem-content">Local variables, function arguments, return addresses — automatic storage</div>
+    </div>
+    <div class="mem-arrow">↕ grows toward each other</div>
+    <div class="mem-row r-heap">
+      <div class="mem-label">HEAP</div>
+      <div class="mem-content">malloc() / new / objects — dynamic storage, managed manually or by GC</div>
+    </div>
+    <div class="mem-row r-thread">
+      <div class="mem-label">TLS</div>
+      <div class="mem-content">thread_local variables — one copy per thread</div>
+    </div>
+    <div class="mem-row r-static">
+      <div class="mem-label">STATIC / BSS</div>
+      <div class="mem-content">Global variables, static class members — lives for entire program</div>
+    </div>
+    <div class="mem-row r-code">
+      <div class="mem-label">CODE / TEXT</div>
+      <div class="mem-content">Compiled program instructions (read-only)</div>
+    </div>
+  </div>
+
+  <div class="storage-grid">
+    <div class="storage-card card-static">
+      <div class="card-title">Static Storage</div>
+      <p>Global variables &amp; static class members</p>
+      <p>Size known at <strong>compile time</strong></p>
+      <p>Allocated at program start</p>
+      <span class="lifetime">🕐 Entire program</span>
+    </div>
+    <div class="storage-card card-auto">
+      <div class="card-title">Automatic Storage</div>
+      <p>Local variables &amp; function arguments</p>
+      <p>Stored in the call <strong>stack frame</strong></p>
+      <p>Freed automatically on return</p>
+      <span class="lifetime">🕐 Function call</span>
+    </div>
+    <div class="storage-card card-dynamic">
+      <div class="card-title">Dynamic Storage</div>
+      <p>Explicitly allocated memory &amp; objects</p>
+      <p>Lives on the <strong>Heap</strong></p>
+      <p>Freed manually or by GC</p>
+      <span class="lifetime">🕐 Until released</span>
+    </div>
+    <div class="storage-card card-thread">
+      <div class="card-title">Thread Storage</div>
+      <p>Thread-local variables (<ic>thread_local</ic>)</p>
+      <p>Each thread gets its <strong>own copy</strong></p>
+      <p>Freed when thread ends</p>
+      <span class="lifetime">🕐 Thread lifetime</span>
+    </div>
+  </div>
+  <div class="note">Interpreted languages like Python don't have traditional static storage — everything is managed dynamically by the runtime.</div>
+</section>
+
+<!-- 3. Managing Dynamic Storage -->
+<section>
+  <div class="sec-head"><span class="sec-num">03</span><h2>Managing Dynamic (Heap) Storage</h2></div>
+  <p>Dynamic memory must be both <strong>allocated</strong> and <strong>released</strong>. Forgetting to release it causes a <em>memory leak</em> — your program slowly consumes all available RAM.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0;">
+    <div>
+      <p class="lang-label">Allocation</p>
+      <ul>
+        <li><strong>Explicit:</strong> <ic>malloc()</ic> in C</li>
+        <li><strong>Implicit:</strong> <ic>new BankAccount("John", 100)</ic></li>
+      </ul>
+    </div>
+    <div>
+      <p class="lang-label">Release</p>
+      <ul>
+        <li><strong>Manual:</strong> programmer calls <ic>free()</ic></li>
+        <li><strong>Automatic:</strong> garbage collector</li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="lang-label">Simple case — C</p>
+  <pre><span class="kw">int</span> n = 10;
+<span class="kw">int</span> *p = <span class="fn">malloc</span>(n * <span class="kw">sizeof</span>(<span class="kw">int</span>));  <span class="cm">// allocate on heap</span>
+
+<span class="cm">// … use p …</span>
+
+<span class="fn">free</span>(p);  <span class="cm">// release — don't forget this!</span>
+p = <span class="kw">NULL</span>; <span class="cm">// good practice: avoid dangling pointer</span></pre>
+
+  <div class="warn">A <strong>memory leak</strong> occurs when heap memory is allocated but never freed. The program's memory usage grows over time and can eventually crash the system.</div>
+</section>
+
+<!-- 4. Complex Case: Linked List -->
+<section>
+  <div class="sec-head"><span class="sec-num">04</span><h2>Complex Case — Linked List</h2></div>
+  <p>Complex data structures allocate memory <em>internally</em> for each of their nodes. Freeing only the head pointer leaves all other nodes orphaned in memory.</p>
+
+  <div style="margin:16px 0;">
+    <p class="ll-head">HEAD</p>
+    <div class="ll">
+      <div class="ll-node"><div class="ll-val">10</div><div class="ll-ptr">→</div></div>
+      <div class="ll-arrow">→</div>
+      <div class="ll-node"><div class="ll-val">20</div><div class="ll-ptr">→</div></div>
+      <div class="ll-arrow">→</div>
+      <div class="ll-null">NULL</div>
+    </div>
+  </div>
+
+  <pre><span class="kw">class</span> <span class="tp">LinkedList</span> {
+    <span class="fn">LinkedList</span>(<span class="kw">int</span> value) { … } <span class="cm">// allocates node on heap</span>
+    <span class="fn">append</span>(<span class="kw">int</span> value)       { … } <span class="cm">// allocates another node</span>
+}
+
+list = <span class="kw">new</span> <span class="tp">LinkedList</span>(10);
+list.<span class="fn">append</span>(20);
+
+<span class="fn">free</span>(head); <span class="cm danger">// ❌ Only frees node [10] — node [20] leaks!</span></pre>
+
+  <div class="warn">Calling <ic>free(head)</ic> only releases the <em>first</em> node. Node [20] and any further nodes are now unreachable and leaked. You must traverse the entire list and free every node.</div>
+</section>
+
+<!-- 5. Dispose Pattern -->
+<section>
+  <div class="sec-head"><span class="sec-num">05</span><h2>The Dispose Pattern</h2></div>
+  <p>Classes that internally allocate resources should expose a cleanup method so callers can properly release everything — not just the top-level pointer.</p>
+  <ul>
+    <li>Common names: <ic>dispose()</ic>, <ic>close()</ic>, <ic>release()</ic>, <ic>destroy()</ic></li>
+    <li>Applies to more than memory — also <strong>file handles</strong>, <strong>DB connections</strong>, <strong>network sockets</strong>, etc.</li>
+    <li>Caller is responsible for invoking it at the right time</li>
+  </ul>
+
+  <div class="spectrum">
+    <div class="sp-manual">Manual<br><span style="font-weight:400;font-size:.8rem;">dispose() written manually<br>dispose() called manually</span></div>
+    <div class="sp-semiauto">Semi-Automatic<br><span style="font-weight:400;font-size:.8rem;">dispose() written manually<br>dispose() called by runtime</span></div>
+    <div class="sp-auto">Fully Automatic<br><span style="font-weight:400;font-size:.8rem;">Garbage Collection<br>no dispose() needed</span></div>
+  </div>
+</section>
+
+<!-- 6. Semi-automatic: with / using -->
+<section>
+  <div class="sec-head"><span class="sec-num">06</span><h2>Semi-automatic Release — <ic>with</ic> / <ic>using</ic></h2></div>
+  <p>Python and C# guarantee that <ic>dispose()</ic> is called automatically when a block exits — even if an exception occurs.</p>
+
+  <p class="lang-label">Python — with statement</p>
+  <pre><span class="kw">with</span> <span class="fn">open</span>(<span class="str">"student_records.csv"</span>, <span class="str">"r"</span>) <span class="kw">as</span> file:
+    data = file.<span class="fn">read</span>()
+    <span class="cm">…</span>
+<span class="cm"># file.close() is called automatically here, even on exception ✅</span></pre>
+
+  <p class="lang-label">C# — using statement</p>
+  <pre><span class="kw">using</span> (<span class="kw">var</span> writer = <span class="kw">new</span> <span class="tp">StreamWriter</span>(<span class="str">"students.txt"</span>))
+{
+    writer.<span class="fn">WriteLine</span>(<span class="str">"Student ID: 12345"</span>);
+    <span class="cm">…</span>
+} <span class="cm">// writer.Dispose() called automatically here ✅</span></pre>
+
+  <div class="note">Both Python and C# have garbage collection for memory, so <ic>with</ic>/<ic>using</ic> is mainly used for <strong>non-memory resources</strong> like files, sockets, and DB connections.</div>
+</section>
+
+<!-- 7. RAII -->
+<section>
+  <div class="sec-head"><span class="sec-num">07</span><h2>RAII — Resource Acquisition Is Initialization</h2></div>
+  <p>A C++ pattern: tie resource lifetime directly to object lifetime using constructors and destructors.</p>
+  <ul>
+    <li><strong>Constructor</strong> — acquire the resource (open file, allocate memory, etc.)</li>
+    <li><strong>Destructor</strong> — release the resource automatically called when object goes out of scope</li>
+    <li>Destructor is called <strong>deterministically</strong> — the moment the object leaves scope, not some time later</li>
+  </ul>
+
+  <p class="lang-label">C++ RAII example</p>
+  <pre><span class="kw">class</span> <span class="tp">FileHandler</span> {
+<span class="kw">public</span>:
+    <span class="fn">FileHandler</span>(<span class="kw">const</span> <span class="tp">string</span>&amp; path) {
+        file = <span class="fn">fopen</span>(path.<span class="fn">c_str</span>(), <span class="str">"r"</span>); <span class="cm">// acquire in constructor</span>
+    }
+    ~<span class="fn">FileHandler</span>() {
+        <span class="kw">if</span> (file) <span class="fn">fclose</span>(file);           <span class="cm">// release in destructor</span>
+    }
+<span class="kw">private</span>:
+    FILE* file;
+};
+
+<span class="kw">void</span> <span class="fn">readData</span>() {
+    <span class="tp">FileHandler</span> <span class="fn">fh</span>(<span class="str">"data.txt"</span>);  <span class="cm">// file opened</span>
+    <span class="cm">// … use fh …</span>
+} <span class="cm">// ← destructor called here automatically — file closed ✅</span></pre>
+  <div class="note">RAII is the dominant resource management idiom in modern C++. Smart pointers (<ic>unique_ptr</ic>, <ic>shared_ptr</ic>) are built on this exact principle.</div>
+</section>
+
+<!-- 8. Garbage Collection -->
+<section>
+  <div class="sec-head"><span class="sec-num">08</span><h2>Fully Automatic — Garbage Collection</h2></div>
+  <p>The language runtime periodically identifies memory that is <strong>no longer reachable</strong> and reclaims it automatically. The programmer never calls <ic>free()</ic>.</p>
+
+  <div class="gc-grid">
+    <div class="gc-box ref">
+      <div class="gc-title">Reference Counting GC</div>
+      <p>Each object tracks how many references point to it.</p>
+      <p>When count drops to 0 → object is freed immediately.</p>
+      <p class="pro">✅ Predictable, no long pauses</p>
+      <p class="con">❌ Assignment &amp; parameter passing are slower</p>
+      <p class="con">❌ Cannot handle circular references</p>
+      <p style="font-size:.8rem;color:var(--muted);margin-top:8px;">Used by: Python (primary GC), Swift, Rust (Arc)</p>
+    </div>
+    <div class="gc-box trace">
+      <div class="gc-title">Tracing GC (Mark &amp; Sweep)</div>
+      <p>Periodically traces all reachable objects from root set.</p>
+      <p>Objects not reached → garbage → reclaimed.</p>
+      <p class="pro">✅ Handles circular references</p>
+      <p class="pro">✅ No overhead per assignment</p>
+      <p class="con">❌ Occasional "stop-the-world" pauses</p>
+      <p style="font-size:.8rem;color:var(--muted);margin-top:8px;">Used by: Java, C#, Go, JavaScript</p>
+    </div>
+  </div>
+</section>
+
+<!-- 9. Reference Counting Deep Dive -->
+<section>
+  <div class="sec-head"><span class="sec-num">09</span><h2>Reference Counting — Step by Step</h2></div>
+  <p>Every object has a counter tracking how many variables reference it:</p>
+  <pre><span class="nb">a</span> = <span class="fn">object</span>()   <span class="cm"># object 1 created — ref count = 1</span>
+<span class="nb">b</span> = <span class="fn">object</span>()   <span class="cm"># object 2 created — ref count = 1</span>
+<span class="nb">a</span> = <span class="nb">b</span>           <span class="cm"># a now points to object 2</span>
+               <span class="cm"># object 1 ref count → 0 → freed! ✅</span>
+               <span class="cm"># object 2 ref count → 2</span></pre>
+
+  <div class="ref-table">
+    <div class="rh">Object</div><div class="rh">Ref Count</div>
+    <div class="rc">object 1</div><div class="rc"><span class="ref-cnt">0</span> → freed</div>
+    <div class="rc">object 2</div><div class="rc"><span class="ref-cnt">2</span> (a and b)</div>
+  </div>
+
+  <div class="warn"><strong>Circular reference problem:</strong> If object A holds a reference to object B, and B holds a reference back to A, neither ever reaches zero — they leak forever. Python solves this with a secondary <em>cycle detector</em>.</div>
+</section>
+
+<!-- 10. GC by Tracing -->
+<section>
+  <div class="sec-head"><span class="sec-num">10</span><h2>GC by Tracing — Mark &amp; Sweep</h2></div>
+  <p>The GC starts from a <strong>root set</strong> (active variables, stack frames, global refs) and traces all reachable objects. Anything not reached is garbage.</p>
+
+  <div class="trace-graph">
+    <div class="tg-legend">
+      <span><span class="tg-dot dot-root"></span><span style="color:#ff5370;">Root set (in use)</span></span>
+      <span><span class="tg-dot dot-reach"></span><span style="color:#c3e88d;">Reachable (keep)</span></span>
+      <span><span class="tg-dot dot-dead"></span><span style="color:#546e7a;">Unreachable (reclaim)</span></span>
+    </div>
+    <div class="tg-nodes">
+      <div class="tg-node n-root">A</div>
+      <div class="tg-node n-root">H</div>
+      <div class="tg-node n-reach">B</div>
+      <div class="tg-node n-reach">C</div>
+      <div class="tg-node n-reach">D</div>
+      <div class="tg-node n-reach">E</div>
+      <div class="tg-node n-reach">F</div>
+      <div class="tg-node n-reach">G</div>
+      <div class="tg-node n-reach">I</div>
+      <div class="tg-node n-reach">J</div>
+      <div class="tg-node n-reach">K</div>
+      <div class="tg-node n-dead">L</div>
+      <div class="tg-node n-dead">M</div>
+      <div class="tg-node n-dead">N</div>
+      <div class="tg-node n-dead">O</div>
+    </div>
+    <p class="tg-caption">A and H are in the root set → everything reachable from them is kept → L, M, N, O are unreachable → reclaimed by GC</p>
+  </div>
+
+  <ul>
+    <li><strong>Mark phase:</strong> traverse from roots, mark all reachable objects</li>
+    <li><strong>Sweep phase:</strong> scan all heap memory, free anything unmarked</li>
+    <li>Solves circular references — if L→M→N→O→L cycle has no root, all four are reclaimed</li>
+  </ul>
+</section>
+
+<!-- Summary -->
+<section class="summary-section">
+  <div class="sec-head"><span class="sec-num">∑</span><h2>Summary: Memory Management at a Glance</h2></div>
+  <table>
+    <thead><tr><th>Concept</th><th>Key Idea</th><th>Freed By / When</th></tr></thead>
+    <tbody>
+      <tr><td>Static Storage</td><td>Globals &amp; static members, compile-time size</td><td>Program exit</td></tr>
+      <tr><td>Automatic Storage</td><td>Local vars on the call stack</td><td>Function return</td></tr>
+      <tr><td>Dynamic Storage</td><td>Heap memory via malloc / new</td><td>Manual free() or GC</td></tr>
+      <tr><td>Thread Storage</td><td>Per-thread copies of variables</td><td>Thread termination</td></tr>
+      <tr><td>Memory Leak</td><td>Heap memory never freed</td><td>Bug — causes RAM exhaustion</td></tr>
+      <tr><td>Dispose Pattern</td><td>Class provides explicit cleanup method</td><td>Caller invokes manually</td></tr>
+      <tr><td>with / using</td><td>Dispose auto-called on block exit</td><td>Python &amp; C# (non-memory resources)</td></tr>
+      <tr><td>RAII</td><td>Resource tied to object lifetime via destructor</td><td>C++ — on scope exit (deterministic)</td></tr>
+      <tr><td>GC: Ref Counting</td><td>Free when reference count hits 0</td><td>Immediate; fails on cycles</td></tr>
+      <tr><td>GC: Tracing</td><td>Mark reachable; sweep unreachable</td><td>Periodic; handles cycles</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<footer>
+  <span>CS3035 · Memory Management</span>
+  <span>Reading: Textbook Ch. 6</span>
+</footer>
+
+</div>
+</body>
+</html>
