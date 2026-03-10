@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OOP Basics Quiz — CS3035</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Fira+Code:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161e;
+    --surface2: #1a1e2a;
+    --border: #252a38;
+    --accent: #f97316;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --code-bg: #080b10;
+    --correct: #34d399;
+    --correct-bg: rgba(52,211,153,0.1);
+    --wrong: #f87171;
+    --wrong-bg: rgba(248,113,113,0.1);
+    --neutral: #60a5fa;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Lora', serif;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 55% 40% at 15% 10%, rgba(249,115,22,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 85% 85%, rgba(96,165,250,0.05) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 5rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Header ── */
+  header { text-align: center; padding: 3rem 0 2.5rem; border-bottom: 1px solid var(--border); margin-bottom: 2.5rem; }
+
+  .course-tag {
+    display: inline-block;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    background: rgba(249,115,22,0.09);
+    border: 1px solid rgba(249,115,22,0.22);
+    padding: 0.3rem 0.9rem;
+    border-radius: 2px;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 800;
+    background: linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.6rem;
+  }
+
+  header p { color: var(--muted); font-size: 0.9rem; }
+
+  /* ── Progress bar ── */
+  .progress-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+  }
+
+  .progress-bar-outer {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .progress-bar-inner {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #fb923c);
+    border-radius: 10px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  .progress-label {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .score-label {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.78rem;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  /* ── Quiz card ── */
+  .quiz-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+    animation: fadeUp 0.35s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .q-number {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    background: rgba(249,115,22,0.1);
+    border: 1px solid rgba(249,115,22,0.2);
+    padding: 0.2rem 0.6rem;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+
+  .q-topic {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+
+  .q-type {
+    margin-left: auto;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.68rem;
+    color: var(--neutral);
+    background: rgba(96,165,250,0.08);
+    border: 1px solid rgba(96,165,250,0.15);
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+  }
+
+  .card-body { padding: 1.4rem 1.5rem; }
+
+  .question-text {
+    font-size: 1rem;
+    color: var(--text);
+    margin-bottom: 1.2rem;
+    line-height: 1.6;
+  }
+
+  .question-text code {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.88em;
+    background: var(--surface2);
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    color: #fb923c;
+  }
+
+  /* ── Code block in question ── */
+  .q-code {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.9rem 1.2rem;
+    margin-bottom: 1.2rem;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.82rem;
+    line-height: 1.8;
+    color: #c9d1d9;
+    overflow-x: auto;
+  }
+
+  .kw { color: #ff7b72; }
+  .ty { color: #79c0ff; }
+  .fn { color: #d2a8ff; }
+  .st { color: #a5d6ff; }
+  .cm { color: #8b949e; font-style: italic; }
+  .nu { color: #f0883e; }
+  .blank { color: #fbbf24; font-weight: 700; text-decoration: underline dotted; }
+
+  /* ── Options ── */
+  .options { display: flex; flex-direction: column; gap: 0.6rem; }
+
+  .option-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    text-align: left;
+    color: var(--text);
+    font-family: 'Lora', serif;
+    font-size: 0.93rem;
+    line-height: 1.5;
+    transition: border-color 0.15s, background 0.15s;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.8rem;
+  }
+
+  .option-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: rgba(249,115,22,0.07);
+  }
+
+  .option-btn:disabled { cursor: default; }
+
+  .option-btn.correct {
+    border-color: var(--correct);
+    background: var(--correct-bg);
+    color: #d1fae5;
+  }
+
+  .option-btn.wrong {
+    border-color: var(--wrong);
+    background: var(--wrong-bg);
+    color: #fee2e2;
+  }
+
+  .option-btn.reveal {
+    border-color: var(--correct);
+    background: var(--correct-bg);
+    color: #d1fae5;
+    opacity: 0.7;
+  }
+
+  .opt-letter {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .option-btn.correct .opt-letter { color: var(--correct); }
+  .option-btn.wrong   .opt-letter { color: var(--wrong); }
+  .option-btn.reveal  .opt-letter { color: var(--correct); }
+
+  /* ── Explanation ── */
+  .explanation {
+    margin-top: 1rem;
+    border-left: 3px solid var(--neutral);
+    background: rgba(96,165,250,0.07);
+    border-radius: 0 6px 6px 0;
+    padding: 0.85rem 1.1rem;
+    font-size: 0.88rem;
+    color: #93c5fd;
+    display: none;
+  }
+
+  .explanation.show { display: block; animation: fadeUp 0.3s ease; }
+  .explanation strong { color: var(--neutral); font-family: 'Syne', sans-serif; }
+  .explanation code {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.85em;
+    background: rgba(96,165,250,0.1);
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+  }
+
+  /* ── True/False ── */
+  .tf-options { display: flex; gap: 0.8rem; }
+  .tf-options .option-btn { flex: 1; justify-content: center; }
+
+  /* ── Results screen ── */
+  #results-screen {
+    display: none;
+    text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 3rem 2rem;
+    animation: fadeUp 0.5s ease;
+  }
+
+  .result-score {
+    font-family: 'Syne', sans-serif;
+    font-size: 5rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .result-score.great { color: var(--correct); }
+  .result-score.ok    { color: #fbbf24; }
+  .result-score.poor  { color: var(--wrong); }
+
+  .result-label {
+    font-size: 1.1rem;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .result-msg {
+    font-size: 1.05rem;
+    color: var(--text);
+    margin-bottom: 2rem;
+  }
+
+  .result-breakdown {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .rb-item { text-align: center; }
+  .rb-num { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 700; }
+  .rb-num.green  { color: var(--correct); }
+  .rb-num.red    { color: var(--wrong); }
+  .rb-num.orange { color: var(--accent); }
+  .rb-label { font-size: 0.82rem; color: var(--muted); font-family: 'Fira Code', monospace; }
+
+  .restart-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.75rem 2.5rem;
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .restart-btn:hover { opacity: 0.85; }
+
+  /* ── Navigation ── */
+  .nav-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1rem;
+  }
+
+  .next-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.6rem 1.6rem;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    display: none;
+  }
+
+  .next-btn.show { display: block; }
+  .next-btn:hover { opacity: 0.85; }
+
+  /* ── Topic filter ── */
+  .topic-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .filter-btn {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.72rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .filter-btn.active {
+    background: rgba(249,115,22,0.12);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="course-tag">CS3035 — OOP Basics</div>
+    <h1>Quiz: Object-Oriented Programming</h1>
+    <p>20 questions covering terminology, Python, Java, and encapsulation</p>
+  </header>
+
+  <div class="progress-wrap">
+    <span class="progress-label" id="prog-label">Question 1 of 20</span>
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="prog-bar"></div></div>
+    <span class="score-label" id="score-label">Score: 0</span>
+  </div>
+
+  <div id="quiz-area"></div>
+  <div id="results-screen"></div>
+
+</div>
+
+<script>
+const questions = [
+  // ── Terminology ──────────────────────────────────────────
+  {
+    topic: "Terminology",
+    type: "multiple-choice",
+    q: "What is the correct definition of a <strong>class</strong> in OOP?",
+    options: [
+      "A running instance of a program",
+      "A blueprint or template that defines the attributes and behaviors of objects",
+      "A method that initializes an object",
+      "A variable that stores a reference to an object"
+    ],
+    answer: 1,
+    explanation: "<strong>A class</strong> is a blueprint/template. An <em>object</em> is a specific instance created from that blueprint. For example, <code>BankAccount</code> is a class; <code>myAccount</code> is an object."
+  },
+  {
+    topic: "Terminology",
+    type: "multiple-choice",
+    q: "Which term describes a <strong>variable defined inside a class</strong> that stores object data?",
+    options: ["Method", "Constructor", "Field (instance variable)", "Package"],
+    answer: 2,
+    explanation: "<strong>Fields</strong> (also called instance variables or attributes) are variables declared inside a class. Each object gets its own copy. <em>Methods</em> are functions defined in a class."
+  },
+  {
+    topic: "Terminology",
+    type: "true-false",
+    q: "A <strong>static</strong> member belongs to the class itself rather than to any specific instance (object).",
+    options: ["True", "False"],
+    answer: 0,
+    explanation: "<strong>True.</strong> <code>static</code> means the member is shared across all objects of the class and can be accessed via the class name (e.g. <code>BankAccount.interestRate</code>) without creating an instance."
+  },
+  {
+    topic: "Terminology",
+    type: "multiple-choice",
+    q: "In the statement <code>BankAccount myAccount = new BankAccount();</code>, what is <code>myAccount</code>?",
+    options: [
+      "A class",
+      "A method",
+      "An object (instance of BankAccount)",
+      "A static field"
+    ],
+    answer: 2,
+    explanation: "<code>myAccount</code> is an <strong>object</strong> — a specific instance created from the <code>BankAccount</code> class blueprint. The <code>new</code> keyword creates the instance."
+  },
+
+  // ── this / self ───────────────────────────────────────────
+  {
+    topic: "this / self",
+    type: "multiple-choice",
+    q: "In Java, what does <code>this</code> refer to inside an instance method?",
+    options: [
+      "The class itself",
+      "The current object (the instance the method was called on)",
+      "The parent class",
+      "The static version of the class"
+    ],
+    answer: 1,
+    explanation: "<strong><code>this</code></strong> in Java refers to the <em>current object</em> — the specific instance on which the method is being invoked. It is implicit (you don't write it in the parameter list). Python's equivalent is <code>self</code>, which must be explicit."
+  },
+  {
+    topic: "this / self",
+    type: "true-false",
+    q: "In Python, <code>self</code> must be explicitly listed as the first parameter in every instance method.",
+    options: ["True", "False"],
+    answer: 0,
+    explanation: "<strong>True.</strong> Python requires <code>self</code> explicitly — e.g. <code>def deposit(self, amount):</code>. In Java, <code>this</code> is implicit and does not appear in the parameter list."
+  },
+  {
+    topic: "this / self",
+    type: "multiple-choice",
+    q: `In the Java constructor below, what is the purpose of <code>this.balance = balance</code>?
+<div class="q-code"><span class="kw">public</span> <span class="fn">BankAccount</span>(<span class="ty">double</span> balance) {
+  <span class="kw">this</span>.balance = balance;
+}</div>`,
+    options: [
+      "It calls another constructor",
+      "It disambiguates the field <code>balance</code> from the parameter <code>balance</code>",
+      "It creates a static copy of balance",
+      "It returns the balance value"
+    ],
+    answer: 1,
+    explanation: "When a parameter has the same name as a field, <strong><code>this.balance</code></strong> refers to the instance field, while plain <code>balance</code> refers to the parameter. Without <code>this</code>, you'd be assigning the parameter to itself."
+  },
+
+  // ── Accessing members ─────────────────────────────────────
+  {
+    topic: "Accessing Members",
+    type: "multiple-choice",
+    q: "Which of these correctly accesses an <strong>instance method</strong> in Java?",
+    options: [
+      "<code>BankAccount.deposit(100)</code>",
+      "<code>myAccount.deposit(100)</code>",
+      "<code>deposit.myAccount(100)</code>",
+      "<code>BankAccount::deposit(100)</code>"
+    ],
+    answer: 1,
+    explanation: "Instance methods are accessed through an <strong>object</strong> using dot notation: <code>myAccount.deposit(100)</code>. Static methods are accessed via the class name: <code>BankAccount.getInterestRate()</code>."
+  },
+  {
+    topic: "Accessing Members",
+    type: "true-false",
+    q: "A static method in Java can directly access instance fields (non-static fields) without an object reference.",
+    options: ["True", "False"],
+    answer: 1,
+    explanation: "<strong>False.</strong> Static methods have no implicit <code>this</code>, so they cannot access instance fields directly. They can only access static fields or receive an object as a parameter to access instance members through it."
+  },
+
+  // ── Python static/class methods ───────────────────────────
+  {
+    topic: "Python Methods",
+    type: "multiple-choice",
+    q: "What is the key difference between a Python <code>@staticmethod</code> and a <code>@classmethod</code>?",
+    options: [
+      "Static methods can access instance data; class methods cannot",
+      "Class methods receive <code>cls</code> (the class) as their first argument; static methods receive no automatic argument",
+      "Static methods are faster than class methods",
+      "There is no difference — they are interchangeable"
+    ],
+    answer: 1,
+    explanation: "<strong><code>@classmethod</code></strong> receives <code>cls</code> (the class itself) as its first parameter, allowing it to access class-level data and create instances. <strong><code>@staticmethod</code></strong> receives no automatic argument — it's essentially a plain function namespaced inside the class."
+  },
+  {
+    topic: "Python Methods",
+    type: "multiple-choice",
+    q: `Which decorator is missing from the blank below?
+<div class="q-code"><span class="kw">class</span> <span class="ty">Circle</span>:
+  <span class="blank">___</span>
+  <span class="kw">def</span> <span class="fn">area</span>(radius):   <span class="cm"># no self, no cls</span>
+    <span class="kw">return</span> <span class="nu">3.14</span> * radius ** <span class="nu">2</span></div>`,
+    options: [
+      "<code>@property</code>",
+      "<code>@classmethod</code>",
+      "<code>@staticmethod</code>",
+      "<code>@instance</code>"
+    ],
+    answer: 2,
+    explanation: "Because the method takes no <code>self</code> or <code>cls</code>, it should be decorated with <strong><code>@staticmethod</code></strong>. It's a utility function — it doesn't need to access any instance or class data."
+  },
+
+  // ── Properties (Python) ───────────────────────────────────
+  {
+    topic: "Python Properties",
+    type: "multiple-choice",
+    q: "In Python, what does the <code>@property</code> decorator allow you to do?",
+    options: [
+      "Mark a method as static",
+      "Access a method like an attribute (without parentheses), while running custom logic",
+      "Make a field read-only at the class level",
+      "Prevent subclasses from overriding a method"
+    ],
+    answer: 1,
+    explanation: "<strong><code>@property</code></strong> lets you call a method like an attribute. For example, <code>circle.area</code> instead of <code>circle.area()</code>. This allows encapsulation (computed/validated access) while keeping a clean interface."
+  },
+  {
+    topic: "Python Properties",
+    type: "true-false",
+    q: "A Python property decorated with only <code>@property</code> (no setter) creates a <strong>read-only</strong> attribute.",
+    options: ["True", "False"],
+    answer: 0,
+    explanation: "<strong>True.</strong> Without a corresponding <code>@field.setter</code> method, attempting to assign to the property raises an <code>AttributeError</code>. Add a setter with <code>@area.setter</code> to allow writes."
+  },
+
+  // ── Access modifiers (Java) ───────────────────────────────
+  {
+    topic: "Access Modifiers",
+    type: "multiple-choice",
+    q: "In Java, which access modifier makes a member accessible <strong>everywhere</strong> — inside the class, the package, and from any other class?",
+    options: ["<code>private</code>", "<code>protected</code>", "<code>public</code>", "default (no modifier)"],
+    answer: 2,
+    explanation: "<strong><code>public</code></strong> is the most permissive — accessible from anywhere. <code>private</code> is only accessible within the declaring class. Default (no keyword) is package-level. <code>protected</code> adds subclass access on top of package-level."
+  },
+  {
+    topic: "Access Modifiers",
+    type: "multiple-choice",
+    q: "In Java, which access modifier should you use for a field to enforce <strong>encapsulation</strong>?",
+    options: ["<code>public</code>", "<code>protected</code>", "<code>private</code>", "default (no modifier)"],
+    answer: 2,
+    explanation: "Fields should be <strong><code>private</code></strong> to enforce encapsulation — hiding internal data and controlling access through public getters/setters. This prevents outside code from directly modifying the object's state."
+  },
+  {
+    topic: "Access Modifiers",
+    type: "true-false",
+    q: "In Java, <code>protected</code> members are accessible from any class in the same package AND from subclasses in other packages.",
+    options: ["True", "False"],
+    answer: 0,
+    explanation: "<strong>True.</strong> <code>protected</code> = package access + subclass access. So a <code>protected</code> member in class <code>Foo</code> is visible to all classes in Foo's package, and also to any subclass of Foo, even in a different package."
+  },
+
+  // ── Nested / Inner classes ────────────────────────────────
+  {
+    topic: "Nested Classes",
+    type: "multiple-choice",
+    q: "What is the main characteristic of an <strong>anonymous class</strong> in Java?",
+    options: [
+      "It is declared inside a method and has a name",
+      "It is a class defined and instantiated in a single expression, without a name",
+      "It can only extend abstract classes",
+      "It is a class with no fields"
+    ],
+    answer: 1,
+    explanation: "An <strong>anonymous class</strong> is defined inline — declared and instantiated simultaneously — and has no name. It's commonly used to provide a one-off implementation of an interface or to override methods without creating a full named class."
+  },
+  {
+    topic: "Nested Classes",
+    type: "true-false",
+    q: "A <strong>local class</strong> in Java is defined inside a method and is visible only within that method.",
+    options: ["True", "False"],
+    answer: 0,
+    explanation: "<strong>True.</strong> A local class is scoped to the block (usually a method) in which it is declared. It can access local variables of the method if they are effectively final."
+  },
+
+  // ── Encapsulation ─────────────────────────────────────────
+  {
+    topic: "Encapsulation",
+    type: "multiple-choice",
+    q: "Which of the following best describes the purpose of <strong>encapsulation</strong>?",
+    options: [
+      "To allow multiple classes to inherit from the same parent",
+      "To bundle data and methods together while hiding internal implementation details",
+      "To allow a method to be called with different numbers of arguments",
+      "To convert primitive types into class types"
+    ],
+    answer: 1,
+    explanation: "<strong>Encapsulation</strong> bundles data (fields) and the methods that operate on it into one unit (the class), and hides the internal implementation. The outside world interacts only through a well-defined public interface. This improves security, reduces coupling, and manages complexity."
+  },
+  {
+    topic: "Encapsulation",
+    type: "multiple-choice",
+    q: "The <strong>golden rule of encapsulation</strong> from the lecture is best described as:",
+    options: [
+      "Never use inheritance",
+      "Every class should have exactly one public method",
+      "Never let outside code directly access or modify a class's internal data — expose it only through controlled methods",
+      "All fields must be static"
+    ],
+    answer: 2,
+    explanation: "The golden rule: <strong>hide your data, expose behavior</strong>. Mark fields <code>private</code> and provide public getters/setters that can validate, compute, or restrict access. This decouples internal representation from external use."
+  }
+];
+
+// ── State ─────────────────────────────────────────────────────────────────
+let current = 0;
+let score   = 0;
+let answered = new Array(questions.length).fill(false);
+let shuffled = [];
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function init() {
+  current = 0; score = 0;
+  answered = new Array(questions.length).fill(false);
+  shuffled = shuffle(questions.map((_, i) => i));
+  document.getElementById('results-screen').style.display = 'none';
+  document.getElementById('quiz-area').style.display = '';
+  updateProgress();
+  renderQuestion();
+}
+
+function updateProgress() {
+  const total = questions.length;
+  const done  = answered.filter(Boolean).length;
+  const pct   = (done / total) * 100;
+  document.getElementById('prog-bar').style.width = pct + '%';
+  document.getElementById('prog-label').textContent = `Question ${current + 1} of ${total}`;
+  document.getElementById('score-label').textContent = `Score: ${score}`;
+}
+
+function renderQuestion() {
+  const idx = shuffled[current];
+  const q   = questions[idx];
+  const area = document.getElementById('quiz-area');
+
+  const letters = ['A', 'B', 'C', 'D'];
+  const isTF    = q.type === 'true-false';
+
+  let optionsHtml = '';
+  if (isTF) {
+    optionsHtml = `<div class="tf-options">`;
+    q.options.forEach((opt, i) => {
+      optionsHtml += `<button class="option-btn" onclick="handleAnswer(${i}, this)">
+        <span class="opt-letter">${opt[0]}</span> ${opt}
+      </button>`;
+    });
+    optionsHtml += `</div>`;
+  } else {
+    optionsHtml = `<div class="options">`;
+    q.options.forEach((opt, i) => {
+      optionsHtml += `<button class="option-btn" onclick="handleAnswer(${i}, this)">
+        <span class="opt-letter">${letters[i]}</span> <span>${opt}</span>
+      </button>`;
+    });
+    optionsHtml += `</div>`;
+  }
+
+  area.innerHTML = `
+    <div class="quiz-card" id="qcard">
+      <div class="card-header">
+        <span class="q-number">Q${current + 1}</span>
+        <span class="q-topic">${q.topic}</span>
+        <span class="q-type">${isTF ? 'True / False' : 'Multiple Choice'}</span>
+      </div>
+      <div class="card-body">
+        <p class="question-text">${q.q}</p>
+        ${optionsHtml}
+        <div class="explanation" id="explanation">${q.explanation}</div>
+        <div class="nav-row">
+          <button class="next-btn" id="next-btn" onclick="nextQuestion()">
+            ${current + 1 < questions.length ? 'Next Question →' : 'See Results →'}
+          </button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function handleAnswer(chosen, btn) {
+  const idx     = shuffled[current];
+  const q       = questions[idx];
+  const isTF    = q.type === 'true-false';
+  const area    = document.getElementById('quiz-area');
+  const allBtns = area.querySelectorAll('.option-btn');
+
+  // Disable all buttons
+  allBtns.forEach(b => b.disabled = true);
+
+  // Mark correct / wrong
+  allBtns.forEach((b, i) => {
+    if (i === q.answer) b.classList.add(chosen === q.answer ? 'correct' : 'reveal');
+  });
+  if (chosen !== q.answer) {
+    btn.classList.add('wrong');
+  }
+
+  // Score
+  if (chosen === q.answer) score++;
+  answered[current] = true;
+
+  // Show explanation + next button
+  document.getElementById('explanation').classList.add('show');
+  document.getElementById('next-btn').classList.add('show');
+  updateProgress();
+}
+
+function nextQuestion() {
+  current++;
+  if (current >= questions.length) {
+    showResults();
+  } else {
+    updateProgress();
+    renderQuestion();
+  }
+}
+
+function showResults() {
+  document.getElementById('quiz-area').style.display = 'none';
+  const rs    = document.getElementById('results-screen');
+  rs.style.display = 'block';
+
+  const total   = questions.length;
+  const pct     = Math.round((score / total) * 100);
+  const wrong   = total - score;
+
+  let grade, msg, cls;
+  if (pct >= 85)      { grade = '🎉'; msg = 'Excellent work! You have a strong grasp of OOP Basics.'; cls = 'great'; }
+  else if (pct >= 60) { grade = '👍'; msg = 'Good effort! Review the topics you missed and try again.'; cls = 'ok'; }
+  else                { grade = '📖'; msg = 'Keep studying! Re-read the OOP Basics notes and retake the quiz.'; cls = 'poor'; }
+
+  rs.innerHTML = `
+    <div class="result-score ${cls}">${pct}%</div>
+    <p class="result-label">${score} / ${total} correct</p>
+    <p class="result-msg">${grade} ${msg}</p>
+    <div class="result-breakdown">
+      <div class="rb-item"><div class="rb-num green">${score}</div><div class="rb-label">correct</div></div>
+      <div class="rb-item"><div class="rb-num red">${wrong}</div><div class="rb-label">incorrect</div></div>
+      <div class="rb-item"><div class="rb-num orange">${pct}%</div><div class="rb-label">score</div></div>
+    </div>
+    <button class="restart-btn" onclick="init()">Retake Quiz</button>`;
+}
+
+// Kick off
+init();
+</script>
+</body>
+</html>

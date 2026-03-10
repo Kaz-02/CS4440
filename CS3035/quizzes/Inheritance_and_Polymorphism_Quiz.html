@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inheritance & Polymorphism Quiz — CS3035</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink:    #0f0d1a;
+    --paper:  #f5f2eb;
+    --accent: #6b21e8;
+    --green:  #16a34a;
+    --red:    #dc2626;
+    --muted:  #8a86a0;
+    --rule:   #d4cecc;
+    --tag-bg: #ede8ff;
+    --tag-fg: #5a1ec8;
+    --code-bg:#1a1628;
+    --code-fg:#e2deff;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Lora', serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.7;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: repeating-linear-gradient(transparent, transparent 27px, var(--rule) 27px, var(--rule) 28px);
+    opacity: .25; pointer-events: none; z-index: 0;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 780px; margin: 0 auto; padding: 50px 36px 100px; }
+
+  /* HEADER */
+  header { border-left: 6px solid var(--accent); padding: 10px 0 10px 24px; margin-bottom: 40px; }
+  .course-tag { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .15em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  h1 { font-family: 'Syne', sans-serif; font-size: clamp(1.9rem,4vw,3rem); font-weight: 800; line-height: 1.05; }
+  h1 span { color: var(--accent); }
+  .subtitle { font-style: italic; color: var(--muted); font-size: .9rem; margin-top: 6px; }
+
+  /* PROGRESS */
+  .progress-bar-wrap { background: #e5e0d8; border-radius: 99px; height: 8px; margin-bottom: 6px; overflow: hidden; }
+  .progress-bar { height: 100%; background: var(--accent); border-radius: 99px; transition: width .4s ease; width: 0%; }
+  .progress-label { font-family: 'JetBrains Mono', monospace; font-size: .78rem; color: var(--muted); margin-bottom: 28px; }
+
+  /* QUESTION CARD */
+  .q-card {
+    background: #fff; border: 1.5px solid var(--rule); border-radius: 8px;
+    padding: 28px 28px 22px; margin-bottom: 20px;
+    display: none; animation: fadeUp .35s ease both;
+  }
+  .q-card.active { display: block; }
+
+  .q-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .q-num { font-family: 'JetBrains Mono', monospace; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .q-topic { font-family: 'Syne', sans-serif; font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; background: var(--tag-bg); color: var(--tag-fg); padding: 2px 10px; border-radius: 3px; }
+
+  .q-text { font-size: 1.02rem; font-weight: 500; margin-bottom: 18px; line-height: 1.5; }
+  .q-text code, .q-text ic { font-family: 'JetBrains Mono', monospace; background: var(--tag-bg); color: var(--tag-fg); padding: 1px 6px; border-radius: 3px; font-size: .88em; }
+
+  /* CODE BLOCK IN QUESTION */
+  .q-code {
+    background: var(--code-bg); color: var(--code-fg);
+    font-family: 'JetBrains Mono', monospace; font-size: .82rem;
+    line-height: 1.65; padding: 16px 20px; border-radius: 4px;
+    margin-bottom: 16px; overflow-x: auto;
+    border-left: 3px solid var(--accent);
+  }
+  .kw  { color: #c792ea; }
+  .fn  { color: #82aaff; }
+  .str { color: #c3e88d; }
+  .cm  { color: #546e7a; font-style: italic; }
+  .tp  { color: #ffcb6b; }
+  .an  { color: #ff9cac; }
+
+  /* OPTIONS */
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .opt {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 16px; border-radius: 6px;
+    border: 1.5px solid var(--rule); cursor: pointer;
+    font-size: .93rem; transition: border-color .15s, background .15s;
+    background: #faf9f6;
+  }
+  .opt:hover:not(.disabled) { border-color: var(--accent); background: #f5f0ff; }
+  .opt-letter {
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: .82rem;
+    min-width: 24px; height: 24px; border-radius: 50%;
+    background: var(--tag-bg); color: var(--tag-fg);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px; transition: background .15s, color .15s;
+  }
+  .opt.correct { border-color: var(--green); background: #f0fdf4; }
+  .opt.correct .opt-letter { background: var(--green); color: #fff; }
+  .opt.wrong { border-color: var(--red); background: #fff1f1; }
+  .opt.wrong .opt-letter { background: var(--red); color: #fff; }
+  .opt.disabled { cursor: default; }
+  .opt.reveal-correct { border-color: var(--green); background: #f0fdf4; }
+  .opt.reveal-correct .opt-letter { background: var(--green); color: #fff; }
+
+  /* FEEDBACK */
+  .feedback { margin-top: 14px; padding: 12px 16px; border-radius: 6px; font-size: .88rem; line-height: 1.5; display: none; }
+  .feedback.show { display: block; animation: fadeUp .25s ease both; }
+  .feedback.correct-fb { background: #f0fdf4; border-left: 4px solid var(--green); }
+  .feedback.wrong-fb   { background: #fff1f1; border-left: 4px solid var(--red); }
+  .feedback code, .feedback ic { font-family: 'JetBrains Mono', monospace; background: rgba(0,0,0,.06); padding: 1px 5px; border-radius: 3px; font-size: .88em; }
+
+  /* NEXT BTN */
+  .next-btn {
+    margin-top: 18px; padding: 10px 28px;
+    background: var(--accent); color: #fff; border: none; border-radius: 4px;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: .9rem;
+    cursor: pointer; display: none; letter-spacing: .04em; transition: opacity .15s;
+  }
+  .next-btn:hover { opacity: .88; }
+  .next-btn.show { display: inline-block; }
+
+  /* SCORE SCREEN */
+  #score-screen { display: none; text-align: center; animation: fadeUp .45s ease both; padding: 40px 20px; }
+  #score-screen.show { display: block; }
+  .score-circle {
+    width: 130px; height: 130px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    margin: 0 auto 24px; font-family: 'Syne', sans-serif;
+  }
+  .score-num { font-size: 2.6rem; font-weight: 800; line-height: 1; }
+  .score-denom { font-size: .85rem; opacity: .8; }
+  .score-title { font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 700; margin-bottom: 8px; }
+  .score-sub { color: var(--muted); font-style: italic; margin-bottom: 28px; }
+  .restart-btn {
+    padding: 12px 36px; background: var(--accent); color: #fff;
+    border: none; border-radius: 4px; cursor: pointer;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem;
+    letter-spacing: .04em; transition: opacity .15s;
+  }
+  .restart-btn:hover { opacity: .88; }
+  .result-log { margin-top: 36px; text-align: left; }
+  .result-log h3 { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; margin-bottom: 12px; }
+  .log-item { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--rule); font-size: .86rem; }
+  .log-icon { font-size: .9rem; flex-shrink: 0; margin-top: 2px; }
+  .log-q { flex: 1; color: #444; }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  @media(max-width:560px) { .wrap { padding: 32px 18px 60px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="course-tag">CS3035 Programming Paradigms &nbsp;·&nbsp; Quiz</p>
+  <h1>Inheritance &amp; <span>Polymorphism</span></h1>
+  <p class="subtitle">20 questions · Multiple choice · Instant feedback</p>
+</header>
+
+<div class="progress-bar-wrap"><div class="progress-bar" id="prog-bar"></div></div>
+<p class="progress-label" id="prog-label">Question 1 of 20</p>
+
+<div id="quiz-area"></div>
+<div id="score-screen"></div>
+
+</div>
+<script>
+const questions = [
+  // ── Motivating Example / Inheritance Basics ──────────────────────────────
+  {
+    topic: "Inheritance",
+    text: "In the Employee payroll example, why is inheritance useful instead of writing separate <code>FullTimeEmployee</code> and <code>PartTimeEmployee</code> classes from scratch?",
+    options: [
+      "It allows both classes to share one object in memory",
+      "It avoids duplicating shared fields like name and id, putting common code in one place",
+      "It prevents either class from having its own methods",
+      "It automatically generates the calculatePay() logic for both"
+    ],
+    answer: 1,
+    feedback: "Inheritance lets you write shared fields and methods (<code>name</code>, <code>id</code>, etc.) once in the <code>Employee</code> superclass. Both subclasses inherit them automatically, eliminating duplication and making bugs easier to fix."
+  },
+  {
+    topic: "Inheritance",
+    text: "In Java, which keyword does a subclass use to inherit from a superclass?",
+    options: ["<code>implements</code>", "<code>inherits</code>", "<code>extends</code>", "<code>super</code>"],
+    answer: 2,
+    feedback: "<code>extends</code> is the Java keyword for class inheritance — e.g., <code>class Dog extends Animal</code>. Python uses parentheses instead: <code>class Dog(Animal):</code>."
+  },
+  {
+    topic: "Inheritance",
+    text: "A <code>Dog</code> class extends <code>Animal</code>. <code>Animal</code> has an <code>eat()</code> method; <code>Dog</code> adds a <code>bark()</code> method. Which calls are valid on a <code>Dog</code> object?",
+    options: [
+      "Only <code>bark()</code> — Dog's own methods only",
+      "Only <code>eat()</code> — inherited methods only",
+      "Both <code>eat()</code> and <code>bark()</code>",
+      "Neither — you must call them through the superclass"
+    ],
+    answer: 2,
+    feedback: "A subclass object has access to <strong>both</strong> its own methods and all inherited (accessible) methods from the superclass. <code>d.eat()</code> and <code>d.bark()</code> are both valid."
+  },
+  // ── Benefits ─────────────────────────────────────────────────────────────
+  {
+    topic: "Benefits of Inheritance",
+    text: "Which of the following is a benefit of inheritance?",
+    options: [
+      "It allows a class to have multiple instances at once",
+      "It makes code run faster by removing method calls",
+      "It reduces code duplication and makes maintenance easier",
+      "It prevents subclasses from adding their own methods"
+    ],
+    answer: 2,
+    feedback: "Inheritance promotes <strong>code reuse</strong> — shared logic lives in the superclass. Fix a bug there and every subclass benefits automatically. It also models real-world hierarchies naturally and forms the foundation for polymorphism."
+  },
+  // ── Multiple Inheritance / MRO ────────────────────────────────────────────
+  {
+    topic: "Multiple Inheritance & MRO",
+    text: "In Python, <code>class C(A, B)</code> — both <code>A</code> and <code>B</code> define a <code>greet()</code> method. What does <code>C().greet()</code> call?",
+    options: [
+      "B's version, because B comes last",
+      "A's version, because Python's MRO checks left to right",
+      "Both A and B's versions simultaneously",
+      "It raises an error due to the ambiguity"
+    ],
+    answer: 1,
+    feedback: "Python uses the <strong>Method Resolution Order (MRO)</strong>, which checks parent classes from left to right. Since <code>A</code> is listed first in <code>class C(A, B)</code>, <code>A.greet()</code> is found first and called."
+  },
+  {
+    topic: "Multiple Inheritance & MRO",
+    text: "Why does Java NOT support inheriting from multiple classes simultaneously?",
+    options: [
+      "Java is too old to support the feature",
+      "To avoid the 'diamond problem' — ambiguity when two parents define the same method",
+      "Because Java classes can only have one constructor",
+      "Multiple inheritance is not needed since Java has generics"
+    ],
+    answer: 1,
+    feedback: "The <strong>diamond problem</strong>: if class C inherits from both A and B, and both define the same method, it's ambiguous which version C should use. Java sidesteps this by only allowing a class to extend one class, while permitting multiple <em>interface</em> implementations."
+  },
+  // ── Encapsulation / Access Modifiers ─────────────────────────────────────
+  {
+    topic: "Inheritance vs Encapsulation",
+    text: "Which Java access modifier makes a member accessible to the class itself and its subclasses, but NOT to unrelated classes outside the package?",
+    options: ["<code>private</code>", "<code>public</code>", "<code>protected</code>", "no modifier (package-private)"],
+    answer: 2,
+    feedback: "<code>protected</code> grants access to the same class, all subclasses (even in other packages), and the same package. It's the right choice when you want subclasses to access a field but don't want to expose it to the entire world."
+  },
+  {
+    topic: "Inheritance vs Encapsulation",
+    text: "In Python, what does the naming convention <code>__name</code> (double underscore prefix) indicate?",
+    options: [
+      "The attribute is completely inaccessible from any code",
+      "The attribute is name-mangled to be pseudo-private to the class",
+      "The attribute is a class-level constant",
+      "The attribute is inherited from a parent class"
+    ],
+    answer: 1,
+    feedback: "Python uses <strong>name mangling</strong>: <code>__attr</code> becomes <code>_ClassName__attr</code> internally, making accidental access from outside harder. It's not truly private (you can still access it), but it strongly signals that the attribute is an implementation detail."
+  },
+  {
+    topic: "Inheritance vs Encapsulation",
+    text: "Inheritance and encapsulation are sometimes described as being in tension. Why?",
+    options: [
+      "Inheritance requires all methods to be public, breaking encapsulation",
+      "Encapsulation hides internals, but subclasses often need visibility into superclass internals to reuse code",
+      "Encapsulation prevents a class from having subclasses",
+      "Inheritance makes all fields static, conflicting with instance-level encapsulation"
+    ],
+    answer: 1,
+    feedback: "Encapsulation says: hide your internals. But inheritance says: let subclasses build on those internals. The solution is pragmatic — use <code>protected</code> to expose only what subclasses truly need, and keep the rest <code>private</code>."
+  },
+  // ── Method Overriding ─────────────────────────────────────────────────────
+  {
+    topic: "Method Overriding",
+    text: "What is method overriding?",
+    options: [
+      "Defining two methods with the same name but different parameter lists in the same class",
+      "A subclass re-implementing a superclass method with the exact same signature",
+      "Calling a method on a null object reference",
+      "Replacing a method at compile time using generics"
+    ],
+    answer: 1,
+    feedback: "Overriding means a subclass provides its own implementation of a superclass method using the <strong>exact same name and parameter types</strong>. This allows specialized behavior (e.g., <code>Dog.eat()</code> prints a different message than <code>Animal.eat()</code>)."
+  },
+  {
+    topic: "Method Overriding",
+    text: "What is the key difference between method <strong>overriding</strong> and method <strong>overloading</strong>?",
+    options: [
+      "Overriding uses different parameter types; overloading uses the same parameter types",
+      "Overriding requires inheritance; overloading can happen in the same class with different parameter lists",
+      "Overriding is resolved at compile time; overloading is resolved at runtime",
+      "Overriding only works in Python; overloading only works in Java"
+    ],
+    answer: 1,
+    feedback: "<strong>Overriding</strong>: same name, same parameters, requires a superclass–subclass relationship, resolved at <em>runtime</em>. <strong>Overloading</strong>: same name, different parameters, can be in the same class, resolved at <em>compile time</em>."
+  },
+  {
+    topic: "Method Overriding",
+    text: "What is the purpose of the <code>@Override</code> annotation in Java?",
+    options: [
+      "It forces the method to run faster at compile time",
+      "It marks the method as final so no subclass can override it again",
+      "It asks the compiler to verify that you're actually overriding a superclass method",
+      "It automatically calls the superclass version before the subclass version"
+    ],
+    answer: 2,
+    feedback: "<code>@Override</code> is a safety annotation. If you mistype the method name or use the wrong signature, the compiler will catch it and raise an error. Without it, a mistyped method just silently creates a new, unrelated method — a hard-to-spot bug."
+  },
+  // ── super keyword ─────────────────────────────────────────────────────────
+  {
+    topic: "super keyword",
+    text: "In Java, <code>super.eat()</code> inside <code>Dog.eat()</code> does what?",
+    options: [
+      "Creates a new Animal object and calls eat() on it",
+      "Calls the Animal (superclass) version of eat() from within Dog's overriding method",
+      "Declares that Dog will not override eat() any further",
+      "Removes the Dog's own eat() implementation"
+    ],
+    answer: 1,
+    feedback: "<code>super.method()</code> lets a subclass call the <strong>superclass's original implementation</strong>. This is useful when you want to <em>extend</em> the superclass behavior (run the parent's logic first, then add your own) rather than completely replace it."
+  },
+  {
+    topic: "super keyword",
+    text: "What is the Python equivalent of Java's <code>super.eat()</code>?",
+    options: ["<code>parent.eat(self)</code>", "<code>Animal.eat()</code>", "<code>super().eat()</code>", "<code>self.super.eat()</code>"],
+    answer: 2,
+    feedback: "In Python, <code>super().method()</code> calls the parent class's version of a method. It's cooperative and MRO-aware, making it the preferred way to call superclass methods rather than hard-coding the parent class name."
+  },
+  // ── Abstract Classes ──────────────────────────────────────────────────────
+  {
+    topic: "Abstract Classes",
+    text: "An abstract class in Java can contain which of the following?",
+    options: [
+      "Only abstract methods — no concrete implementation allowed",
+      "Only concrete methods — abstract methods would need an interface",
+      "A mix of both concrete methods (with bodies) and abstract methods (without bodies)",
+      "Only static methods and constants"
+    ],
+    answer: 2,
+    feedback: "An abstract class can have <strong>both concrete and abstract methods</strong>. Concrete methods provide shared, ready-to-use logic. Abstract methods declare a contract that subclasses must fulfill. This makes abstract classes more flexible than interfaces (which were originally all-abstract)."
+  },
+  {
+    topic: "Abstract Classes",
+    text: "Why can't you instantiate an abstract class directly (e.g., <code>new Employee()</code>)?",
+    options: [
+      "Because abstract classes don't have constructors",
+      "Because it would be meaningless — the abstract methods have no implementation yet",
+      "Because abstract classes are automatically made final by the compiler",
+      "Because Java only allows one object per class"
+    ],
+    answer: 1,
+    feedback: "You can't create a meaningful object from an abstract class because some of its methods have <strong>no body</strong>. For example, <code>calculatePay()</code> on a bare <code>Employee</code> has nothing to execute. Only concrete subclasses that fill in all abstract methods can be instantiated."
+  },
+  // ── Interface ─────────────────────────────────────────────────────────────
+  {
+    topic: "Class → Abstract → Interface",
+    text: "How does an interface differ from an abstract class in Java?",
+    options: [
+      "An interface can only be used with the extends keyword",
+      "An interface has all abstract methods (no implementation), while an abstract class can have some concrete methods",
+      "An interface cannot have any constants, but an abstract class can",
+      "An interface is instantiated with new, unlike an abstract class"
+    ],
+    answer: 1,
+    feedback: "In Java, an interface is a <strong>pure contract</strong> — all methods are implicitly public and abstract (Java 8+ adds default methods as an exception). An abstract class sits in the middle of the spectrum: some methods implemented, some not."
+  },
+  {
+    topic: "Class → Abstract → Interface",
+    text: "What is the principle 'program to an interface, not an implementation'?",
+    options: [
+      "Always use interfaces instead of abstract classes",
+      "Declare variable types using the interface/supertype, so you can swap implementations easily",
+      "Write all code inside interface default methods",
+      "Avoid using concrete classes entirely"
+    ],
+    answer: 1,
+    feedback: "By declaring <code>List list = new ArrayList()</code> instead of <code>ArrayList list = new ArrayList()</code>, you can later swap to <code>LinkedList</code> with just one change. All code that uses <code>list</code> stays the same, because it only depends on the <code>List</code> contract."
+  },
+  // ── Polymorphism & Dynamic Binding ────────────────────────────────────────
+  {
+    topic: "Polymorphism & Dynamic Binding",
+    text: "Consider: <code>A a = new B();</code> where B extends A and both define <code>print()</code>. What does <code>a.print()</code> output?",
+    code: `<span class="kw">class</span> <span class="tp">A</span> {
+  <span class="kw">void</span> <span class="fn">print</span>() { System.out.<span class="fn">println</span>(<span class="str">"This is A"</span>); }
+}
+<span class="kw">class</span> <span class="tp">B</span> <span class="kw">extends</span> <span class="tp">A</span> {
+  <span class="an">@Override</span>
+  <span class="kw">void</span> <span class="fn">print</span>() { System.out.<span class="fn">println</span>(<span class="str">"This is B"</span>); }
+}
+<span class="tp">A</span> a = <span class="kw">new</span> <span class="tp">B</span>();
+a.<span class="fn">print</span>();</span>`,
+    options: [
+      '"This is A" — the variable is declared as type A',
+      '"This is B" — the actual runtime object is B',
+      'A compile error — you cannot assign B to an A variable',
+      'Both lines are printed'
+    ],
+    answer: 1,
+    feedback: "This is <strong>dynamic binding</strong> (also called late binding). Even though the variable <code>a</code> is declared as type <code>A</code>, the JVM looks at the <em>actual runtime type</em> of the object — which is <code>B</code> — and calls <code>B</code>'s version of <code>print()</code>."
+  },
+  {
+    topic: "Polymorphism & Dynamic Binding",
+    text: "Polymorphism allows you to write: <code>for (Employee e : employees) { e.calculatePay(...); }</code> What makes this powerful?",
+    options: [
+      "It compiles faster because the loop type is known at compile time",
+      "The same loop works for FullTimeEmployee, PartTimeEmployee, or any future subclass without changes",
+      "It prevents any subclass from overriding calculatePay()",
+      "It ensures all employees have the same salary calculation"
+    ],
+    answer: 1,
+    feedback: "This is the power of polymorphism. The loop is written against the <code>Employee</code> supertype. At runtime, each element calls its own version of <code>calculatePay()</code> — full-time or part-time — via dynamic binding. Adding a new subclass in the future requires <strong>zero changes</strong> to this loop."
+  },
+  {
+    topic: "Polymorphism & Dynamic Binding",
+    text: "Dynamic binding is resolved at what point?",
+    options: [
+      "At compile time, based on the variable's declared type",
+      "At runtime, based on the actual type of the object",
+      "When the class is loaded into memory for the first time",
+      "When the @Override annotation is processed"
+    ],
+    answer: 1,
+    feedback: "<strong>Dynamic binding</strong> (late binding) means the decision of which method version to call is made at <em>runtime</em>, based on the actual class of the object — not the declared type of the variable. This is what makes polymorphism work."
+  }
+];
+
+let current = 0, score = 0, answered = [], results = [];
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+const shuffledQs = shuffle(questions.map((_, i) => i)).map(i => {
+  const q = questions[i];
+  const idxMap = q.options.map((_, j) => j);
+  const sh = shuffle(idxMap);
+  return { ...q, options: sh.map(j => q.options[j]), answer: sh.indexOf(q.answer) };
+});
+
+function render() {
+  const area = document.getElementById('quiz-area');
+  area.innerHTML = '';
+  const q = shuffledQs[current];
+  const letters = ['A','B','C','D'];
+
+  const card = document.createElement('div');
+  card.className = 'q-card active';
+
+  const codeBlock = q.code ? `<div class="q-code">${q.code}</div>` : '';
+
+  card.innerHTML = `
+    <div class="q-meta">
+      <span class="q-num">Q${current + 1} / ${shuffledQs.length}</span>
+      <span class="q-topic">${q.topic}</span>
+    </div>
+    <div class="q-text">${q.text}</div>
+    ${codeBlock}
+    <div class="options" id="opts">
+      ${q.options.map((opt, i) => `
+        <div class="opt" data-i="${i}" onclick="choose(${i})">
+          <span class="opt-letter">${letters[i]}</span>
+          <span>${opt}</span>
+        </div>`).join('')}
+    </div>
+    <div class="feedback" id="fb"></div>
+    <button class="next-btn" id="nxt" onclick="next()">
+      ${current < shuffledQs.length - 1 ? 'Next Question →' : 'See Results'}
+    </button>
+  `;
+  area.appendChild(card);
+  updateProgress();
+}
+
+function choose(i) {
+  if (answered[current]) return;
+  answered[current] = true;
+
+  const q = shuffledQs[current];
+  const opts = document.querySelectorAll('.opt');
+  const fb = document.getElementById('fb');
+  const nxt = document.getElementById('nxt');
+
+  opts.forEach(o => o.classList.add('disabled'));
+
+  if (i === q.answer) {
+    score++;
+    opts[i].classList.add('correct');
+    fb.className = 'feedback show correct-fb';
+    fb.innerHTML = `✅ <strong>Correct!</strong> ${q.feedback}`;
+    results.push({ q: q.text, correct: true });
+  } else {
+    opts[i].classList.add('wrong');
+    opts[q.answer].classList.add('reveal-correct');
+    fb.className = 'feedback show wrong-fb';
+    fb.innerHTML = `❌ <strong>Not quite.</strong> ${q.feedback}`;
+    results.push({ q: q.text, correct: false });
+  }
+  nxt.classList.add('show');
+}
+
+function next() {
+  current++;
+  if (current >= shuffledQs.length) showScore();
+  else render();
+}
+
+function updateProgress() {
+  document.getElementById('prog-bar').style.width = (current / shuffledQs.length * 100) + '%';
+  document.getElementById('prog-label').textContent = `Question ${current + 1} of ${shuffledQs.length}`;
+}
+
+function showScore() {
+  document.getElementById('quiz-area').innerHTML = '';
+  document.getElementById('prog-bar').style.width = '100%';
+  document.getElementById('prog-label').textContent = 'Complete!';
+
+  const pct = Math.round(score / shuffledQs.length * 100);
+  let title, sub;
+  if (pct >= 90)      { title = '🏆 Excellent!';   sub = 'Outstanding mastery of Inheritance & Polymorphism.'; }
+  else if (pct >= 75) { title = '👍 Good Job!';     sub = 'Solid understanding — review a few topics.'; }
+  else if (pct >= 55) { title = '📖 Keep Studying'; sub = 'A few gaps to fill — revisit your notes.'; }
+  else                { title = '💪 Keep Going!';   sub = "Review the notes and try again — you've got this!"; }
+
+  const log = results.map((r, i) => `
+    <div class="log-item">
+      <span class="log-icon">${r.correct ? '✅' : '❌'}</span>
+      <span class="log-q">Q${i+1}: ${r.q.replace(/<[^>]+>/g,'').substring(0,90)}${r.q.length > 90 ? '…' : ''}</span>
+    </div>`).join('');
+
+  const screen = document.getElementById('score-screen');
+  screen.className = 'show';
+  screen.innerHTML = `
+    <div class="score-circle">
+      <span class="score-num">${score}</span>
+      <span class="score-denom">/ ${shuffledQs.length}</span>
+    </div>
+    <h2 class="score-title">${title}</h2>
+    <p class="score-sub">${sub} &nbsp;·&nbsp; ${pct}%</p>
+    <button class="restart-btn" onclick="restart()">Try Again</button>
+    <div class="result-log">
+      <h3>Your Answers</h3>
+      ${log}
+    </div>
+  `;
+  screen.scrollIntoView({ behavior: 'smooth' });
+}
+
+function restart() {
+  current = 0; score = 0; answered = []; results = [];
+  shuffledQs.length = 0;
+  shuffle(questions.map((_, i) => i)).forEach(i => {
+    const q = questions[i];
+    const sh = shuffle(q.options.map((_, j) => j));
+    shuffledQs.push({ ...q, options: sh.map(j => q.options[j]), answer: sh.indexOf(q.answer) });
+  });
+  document.getElementById('score-screen').className = '';
+  document.getElementById('score-screen').innerHTML = '';
+  render();
+}
+
+render();
+</script>
+</body>
+</html>

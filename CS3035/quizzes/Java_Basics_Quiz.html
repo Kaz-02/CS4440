@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java Basics Quiz — CS3035</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Fira+Code:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161e;
+    --surface2: #1a1e2a;
+    --border: #252a38;
+    --accent: #38bdf8;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --code-bg: #080b10;
+    --correct: #34d399;
+    --correct-bg: rgba(52,211,153,0.1);
+    --wrong: #f87171;
+    --wrong-bg: rgba(248,113,113,0.1);
+    --neutral: #a78bfa;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Lora', serif;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 55% 40% at 15% 10%, rgba(56,189,248,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 85% 85%, rgba(167,139,250,0.05) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 5rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Header ── */
+  header {
+    text-align: center;
+    padding: 3rem 0 2.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2.5rem;
+  }
+
+  .course-tag {
+    display: inline-block;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    background: rgba(56,189,248,0.09);
+    border: 1px solid rgba(56,189,248,0.22);
+    padding: 0.3rem 0.9rem;
+    border-radius: 2px;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 800;
+    background: linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.6rem;
+  }
+
+  header p { color: var(--muted); font-size: 0.9rem; }
+
+  /* ── Progress bar ── */
+  .progress-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+  }
+
+  .progress-bar-outer {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .progress-bar-inner {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #7dd3fc);
+    border-radius: 10px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  .progress-label {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .score-label {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.78rem;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  /* ── Quiz card ── */
+  .quiz-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+    animation: fadeUp 0.35s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+  }
+
+  .q-number {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    background: rgba(56,189,248,0.1);
+    border: 1px solid rgba(56,189,248,0.2);
+    padding: 0.2rem 0.6rem;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+
+  .q-topic {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+
+  .q-type {
+    margin-left: auto;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.68rem;
+    color: var(--neutral);
+    background: rgba(167,139,250,0.08);
+    border: 1px solid rgba(167,139,250,0.15);
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+  }
+
+  .card-body { padding: 1.4rem 1.5rem; }
+
+  .question-text {
+    font-size: 1rem;
+    color: var(--text);
+    margin-bottom: 1.2rem;
+    line-height: 1.65;
+  }
+
+  .question-text code {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.88em;
+    background: var(--surface2);
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    color: #7dd3fc;
+  }
+
+  /* ── Code block in question ── */
+  .q-code {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.9rem 1.2rem;
+    margin-bottom: 1.2rem;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.82rem;
+    line-height: 1.9;
+    color: #c9d1d9;
+    overflow-x: auto;
+  }
+
+  /* Syntax colours */
+  .kw { color: #ff7b72; }
+  .ty { color: #79c0ff; }
+  .fn { color: #d2a8ff; }
+  .st { color: #a5d6ff; }
+  .cm { color: #8b949e; font-style: italic; }
+  .nu { color: #f0883e; }
+  .pp { color: #38bdf8; }
+  .blank { color: #fbbf24; font-weight: 700; text-decoration: underline dotted; }
+  .hl  { background: rgba(56,189,248,0.12); border-radius: 2px; padding: 0 2px; }
+
+  /* ── Options ── */
+  .options { display: flex; flex-direction: column; gap: 0.6rem; }
+
+  .option-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    text-align: left;
+    color: var(--text);
+    font-family: 'Lora', serif;
+    font-size: 0.93rem;
+    line-height: 1.5;
+    transition: border-color 0.15s, background 0.15s;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.8rem;
+    width: 100%;
+  }
+
+  .option-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: rgba(56,189,248,0.07);
+  }
+
+  .option-btn:disabled { cursor: default; }
+
+  .option-btn.correct { border-color: var(--correct); background: var(--correct-bg); color: #d1fae5; }
+  .option-btn.wrong   { border-color: var(--wrong);   background: var(--wrong-bg);   color: #fee2e2; }
+  .option-btn.reveal  { border-color: var(--correct); background: var(--correct-bg); color: #d1fae5; opacity: 0.7; }
+
+  .opt-letter {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 3px;
+    color: var(--muted);
+  }
+
+  .option-btn.correct .opt-letter { color: var(--correct); }
+  .option-btn.wrong   .opt-letter { color: var(--wrong); }
+  .option-btn.reveal  .opt-letter { color: var(--correct); }
+
+  .option-btn code {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.85em;
+    background: rgba(255,255,255,0.05);
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+  }
+
+  /* ── True/False ── */
+  .tf-options { display: flex; gap: 0.8rem; }
+  .tf-options .option-btn { flex: 1; justify-content: center; }
+
+  /* ── Explanation ── */
+  .explanation {
+    margin-top: 1rem;
+    border-left: 3px solid var(--neutral);
+    background: rgba(167,139,250,0.07);
+    border-radius: 0 6px 6px 0;
+    padding: 0.85rem 1.1rem;
+    font-size: 0.88rem;
+    color: #c4b5fd;
+    display: none;
+    line-height: 1.6;
+  }
+
+  .explanation.show { display: block; animation: fadeUp 0.3s ease; }
+  .explanation strong { color: var(--neutral); font-family: 'Syne', sans-serif; }
+  .explanation code {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.85em;
+    background: rgba(167,139,250,0.1);
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+    color: #e9d5ff;
+  }
+
+  /* ── Nav ── */
+  .nav-row { display: flex; justify-content: flex-end; margin-top: 1rem; }
+
+  .next-btn {
+    background: var(--accent);
+    color: #0d0f14;
+    border: none;
+    border-radius: 6px;
+    padding: 0.6rem 1.6rem;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    display: none;
+  }
+
+  .next-btn.show { display: block; }
+  .next-btn:hover { opacity: 0.85; }
+
+  /* ── Results ── */
+  #results-screen {
+    display: none;
+    text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 3rem 2rem;
+    animation: fadeUp 0.5s ease;
+  }
+
+  .result-score {
+    font-family: 'Syne', sans-serif;
+    font-size: 5rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .result-score.great { color: var(--correct); }
+  .result-score.ok    { color: #fbbf24; }
+  .result-score.poor  { color: var(--wrong); }
+
+  .result-label  { font-size: 1.1rem; color: var(--muted); margin-bottom: 0.5rem; }
+  .result-msg    { font-size: 1.05rem; color: var(--text); margin-bottom: 2rem; }
+
+  .result-breakdown {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .rb-item { text-align: center; }
+  .rb-num { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 700; }
+  .rb-num.green  { color: var(--correct); }
+  .rb-num.red    { color: var(--wrong); }
+  .rb-num.blue   { color: var(--accent); }
+  .rb-label { font-size: 0.82rem; color: var(--muted); font-family: 'Fira Code', monospace; }
+
+  .restart-btn {
+    background: var(--accent);
+    color: #0d0f14;
+    border: none;
+    border-radius: 6px;
+    padding: 0.75rem 2.5rem;
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .restart-btn:hover { opacity: 0.85; }
+
+  @media (max-width: 600px) {
+    .tf-options { flex-direction: column; }
+    .result-breakdown { gap: 1rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="course-tag">CS3035 — Java Basics</div>
+    <h1>Quiz: Java Basics</h1>
+    <p>25 questions · Hello World · Types · Arrays · Naming · Operators · Classes · Packages</p>
+  </header>
+
+  <div class="progress-wrap">
+    <span class="progress-label" id="prog-label">Question 1 of 25</span>
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="prog-bar"></div></div>
+    <span class="score-label" id="score-label">Score: 0</span>
+  </div>
+
+  <div id="quiz-area"></div>
+  <div id="results-screen"></div>
+
+</div>
+
+<script>
+const ALL_QUESTIONS = [
+
+  // ── About Java ────────────────────────────────────────────
+  {
+    topic: "About Java",
+    type: "multiple-choice",
+    q: "Which of the following best describes how Java achieves cross-platform portability?",
+    options: [
+      "Java compiles directly to native machine code for every OS",
+      "Java source code runs interpreted line-by-line without compilation",
+      "Java compiles to bytecode that runs on the Java Virtual Machine (JVM) on any platform",
+      "Java uses a transpiler to convert code to C before execution"
+    ],
+    answer: 2,
+    explanation: "<strong>Java compiles to bytecode</strong> (.class files), which the JVM interprets or JIT-compiles on any platform. This is the core of Java's \"write once, run anywhere\" promise. Languages like Kotlin, Scala, and Groovy also run on the JVM."
+  },
+  {
+    topic: "About Java",
+    type: "true-false",
+    q: "Kotlin, Scala, and Groovy can all run on the Java Virtual Machine (JVM).",
+    options: ["True", "False"],
+    answer: 0,
+    explanation: "<strong>True.</strong> The JVM is a platform for many languages beyond Java. Kotlin (Android development), Scala (big data/functional), and Groovy (scripting/Gradle) all compile to JVM bytecode and can interoperate with Java libraries."
+  },
+
+  // ── Hello World ───────────────────────────────────────────
+  {
+    topic: "Hello World",
+    type: "multiple-choice",
+    q: `What is wrong with the following Java program?
+<div class="q-code"><span class="kw">public static void</span> <span class="fn">main</span>(<span class="ty">String</span>[] args) {
+  <span class="ty">System</span>.out.<span class="fn">println</span>(<span class="st">"Hello"</span>);
+}</div>`,
+    options: [
+      "The method signature is wrong — it should be <code>int main()</code>",
+      "The code must be wrapped inside a <code>public class</code> declaration",
+      "<code>println</code> should be <code>printf</code>",
+      "Nothing — this is valid Java"
+    ],
+    answer: 1,
+    explanation: "<strong>Every Java program must wrap code in a class.</strong> The <code>main</code> method must live inside a <code>public class ClassName { ... }</code> block. Java has no free-standing functions outside of classes."
+  },
+  {
+    topic: "Hello World",
+    type: "multiple-choice",
+    q: "What is the correct, complete signature for the Java entry-point method?",
+    options: [
+      "<code>public void main()</code>",
+      "<code>static int main(String args)</code>",
+      "<code>public static void main(String[] args)</code>",
+      "<code>public static int main()</code>"
+    ],
+    answer: 2,
+    explanation: "The canonical entry point is <strong><code>public static void main(String[] args)</code></strong>. <code>public</code> — accessible by JVM, <code>static</code> — class-level (no instance needed), <code>void</code> — no return value, <code>String[] args</code> — command-line arguments."
+  },
+  {
+    topic: "Hello World",
+    type: "true-false",
+    q: "In Java, the filename must match the name of the <code>public</code> class declared inside it.",
+    options: ["True", "False"],
+    answer: 0,
+    explanation: "<strong>True.</strong> If you declare <code>public class HelloWorld</code>, the file must be named <code>HelloWorld.java</code> (case-sensitive). The Java compiler enforces this rule."
+  },
+
+  // ── Types & Primitives ────────────────────────────────────
+  {
+    topic: "Types",
+    type: "multiple-choice",
+    q: "Which of the following is a <strong>primitive</strong> type in Java?",
+    options: ["<code>String</code>", "<code>Integer</code>", "<code>int</code>", "<code>Array</code>"],
+    answer: 2,
+    explanation: "<strong><code>int</code></strong> is a primitive — it stores a raw value directly in memory. <code>String</code> and <code>Integer</code> are class types (objects). There is no built-in <code>Array</code> type in Java (arrays are objects)."
+  },
+  {
+    topic: "Types",
+    type: "multiple-choice",
+    q: "What is the key difference between a <strong>primitive type</strong> and a <strong>class type</strong> in Java?",
+    options: [
+      "Primitives can be null; class types cannot",
+      "Primitives store the value directly; class types store a reference to an object on the heap",
+      "Class types are always faster than primitives",
+      "Primitives have methods; class types do not"
+    ],
+    answer: 1,
+    explanation: "<strong>Primitives store values directly</strong> (value semantics). <strong>Class types store references</strong> (addresses) to objects on the heap (reference semantics). Only class types can be <code>null</code>. Wrapper classes like <code>Integer</code> wrap primitives as objects."
+  },
+  {
+    topic: "Types",
+    type: "multiple-choice",
+    q: "What is <strong>auto-boxing</strong> in Java?",
+    options: [
+      "Casting a <code>double</code> to an <code>int</code>",
+      "The automatic conversion between a primitive type and its corresponding wrapper class",
+      "Wrapping a class inside another class",
+      "Converting a <code>String</code> to a primitive number"
+    ],
+    answer: 1,
+    explanation: "<strong>Auto-boxing</strong> is Java's automatic conversion between a primitive (e.g. <code>int</code>) and its wrapper class (e.g. <code>Integer</code>). Example: <code>Integer x = 5;</code> auto-boxes the int <code>5</code> into an <code>Integer</code> object."
+  },
+  {
+    topic: "Types",
+    type: "true-false",
+    q: "In Java, <code>String</code> is a primitive type.",
+    options: ["True", "False"],
+    answer: 1,
+    explanation: "<strong>False.</strong> <code>String</code> is a <em>class type</em> (an object) in Java. Java's 8 primitives are: <code>byte</code>, <code>short</code>, <code>int</code>, <code>long</code>, <code>float</code>, <code>double</code>, <code>boolean</code>, and <code>char</code>."
+  },
+
+  // ── Literals ──────────────────────────────────────────────
+  {
+    topic: "Literals",
+    type: "multiple-choice",
+    q: "Which literal correctly declares a <code>long</code> value in Java?",
+    options: [
+      "<code>long x = 10000000000;</code>",
+      "<code>long x = 10000000000L;</code>",
+      "<code>long x = 10000000000l;</code> (lowercase L)",
+      "Both B and C are correct"
+    ],
+    answer: 3,
+    explanation: "A <strong><code>long</code> literal requires an <code>L</code> or <code>l</code> suffix</strong> — otherwise Java treats the number as an <code>int</code> and overflows. Both uppercase <code>L</code> and lowercase <code>l</code> work, but uppercase <code>L</code> is strongly preferred because lowercase <code>l</code> looks like the digit <code>1</code>."
+  },
+  {
+    topic: "Literals",
+    type: "multiple-choice",
+    q: "What is the type of the literal <code>3.14</code> in Java?",
+    options: ["<code>float</code>", "<code>double</code>", "<code>long</code>", "<code>Number</code>"],
+    answer: 1,
+    explanation: "Floating-point literals without a suffix default to <strong><code>double</code></strong> in Java. To make a <code>float</code> literal you must append <code>f</code> or <code>F</code>: <code>3.14f</code>."
+  },
+
+  // ── Arrays ────────────────────────────────────────────────
+  {
+    topic: "Arrays",
+    type: "multiple-choice",
+    q: `Which of the following array declarations is <strong>invalid</strong> in Java?
+`,
+    options: [
+      "<code>int[] a = {1, 2, 3};</code>",
+      "<code>int[] b = new int[5];</code>",
+      "<code>int[] c = new int[]{1, 2, 3};</code>",
+      "<code>int[] d;</code> &nbsp; then later &nbsp; <code>d = {1, 2, 3};</code>"
+    ],
+    answer: 3,
+    explanation: "<strong>Option D is invalid.</strong> Array initializer syntax <code>{1, 2, 3}</code> can only be used at the point of declaration. After the fact, you must use the anonymous array form: <code>d = new int[]{1, 2, 3};</code>"
+  },
+  {
+    topic: "Arrays",
+    type: "true-false",
+    q: "In Java, an array declared as <code>int[] b = new int[5];</code> will have all elements initialized to <code>0</code>.",
+    options: ["True", "False"],
+    answer: 0,
+    explanation: "<strong>True.</strong> Unlike C, Java always zero-initializes arrays: <code>int</code> arrays → <code>0</code>, <code>boolean</code> arrays → <code>false</code>, object arrays → <code>null</code>. This is a key safety difference from C."
+  },
+
+  // ── Naming Conventions ────────────────────────────────────
+  {
+    topic: "Naming Conventions",
+    type: "multiple-choice",
+    q: "According to Java naming conventions, which of the following is correctly named?",
+    options: [
+      "A class named <code>bank_account</code>",
+      "A constant named <code>maxSize</code>",
+      "A method named <code>CalculateInterest()</code>",
+      "A class named <code>BankAccount</code>"
+    ],
+    answer: 3,
+    explanation: "Java conventions: <strong>Classes/Interfaces → PascalCase</strong> (<code>BankAccount</code>), <strong>methods/variables → camelCase</strong> (<code>calculateInterest</code>), <strong>constants → UPPER_CASE</strong> (<code>MAX_SIZE</code>), <strong>packages → lowercase reverse-URL</strong> (<code>edu.calstatela.cs3035</code>)."
+  },
+  {
+    topic: "Naming Conventions",
+    type: "multiple-choice",
+    q: "What is the correct Java naming convention for a <strong>package</strong>?",
+    options: [
+      "PascalCase — e.g. <code>MyPackage</code>",
+      "camelCase — e.g. <code>myPackage</code>",
+      "Lowercase reverse domain URL — e.g. <code>edu.calstatela.cs3035</code>",
+      "UPPER_CASE — e.g. <code>MY_PACKAGE</code>"
+    ],
+    answer: 2,
+    explanation: "Java packages use <strong>lowercase reverse domain names</strong> to ensure globally unique namespaces. For example, Cal State LA CS3035 might use <code>edu.calstatela.cs3035</code>. This prevents naming collisions between libraries from different organizations."
+  },
+
+  // ── var (type inference) ──────────────────────────────────
+  {
+    topic: "var (Type Inference)",
+    type: "multiple-choice",
+    q: "Which Java version introduced the <code>var</code> keyword for local variable type inference?",
+    options: ["Java 8", "Java 10", "Java 14", "Java 17"],
+    answer: 1,
+    explanation: "<strong>Java 10</strong> introduced <code>var</code> for local variable type inference. Example: <code>var list = new ArrayList&lt;String&gt;();</code> — the compiler infers the type as <code>ArrayList&lt;String&gt;</code>."
+  },
+  {
+    topic: "var (Type Inference)",
+    type: "true-false",
+    q: "<code>var</code> in Java can be used for method parameters and return types.",
+    options: ["True", "False"],
+    answer: 1,
+    explanation: "<strong>False.</strong> <code>var</code> is only allowed for <em>local variables</em> — inside method bodies. It cannot be used for method parameters, return types, or fields. The type must be inferable from the initializer on the same line."
+  },
+
+  // ── Operators & Expressions ───────────────────────────────
+  {
+    topic: "Operators",
+    type: "multiple-choice",
+    q: "What does the following Java expression evaluate to? <code>10 / 3</code>",
+    options: ["<code>3.333...</code>", "<code>3</code>", "<code>3.0</code>", "Compile error"],
+    answer: 1,
+    explanation: "<strong>Integer division truncates</strong> in Java — <code>10 / 3</code> gives <code>3</code>, not <code>3.333</code>. To get a decimal result, at least one operand must be a floating-point type: <code>10.0 / 3</code> or <code>(double) 10 / 3</code>."
+  },
+  {
+    topic: "Operators",
+    type: "true-false",
+    q: "In Java, you can use a non-boolean value (like an integer) as a condition in an <code>if</code> statement, e.g. <code>if (1) { ... }</code>.",
+    options: ["True", "False"],
+    answer: 1,
+    explanation: "<strong>False.</strong> Java requires a strict <code>boolean</code> expression in conditions. <code>if (1)</code> is a <em>compile error</em>. This is a key difference from C, where any non-zero value is truthy."
+  },
+
+  // ── Statements ────────────────────────────────────────────
+  {
+    topic: "Statements",
+    type: "multiple-choice",
+    q: "Which of the following correctly uses a <strong>for-each loop</strong> in Java?",
+    options: [
+      "<code>for (int i : 0..5) { ... }</code>",
+      "<code>for (int x : numbers) { ... }</code>",
+      "<code>foreach (int x in numbers) { ... }</code>",
+      "<code>for (numbers as int x) { ... }</code>"
+    ],
+    answer: 1,
+    explanation: "Java's for-each syntax is <strong><code>for (Type var : iterable)</code></strong>. The iterable must implement the <code>Iterable</code> interface (e.g. arrays, <code>ArrayList</code>, <code>HashSet</code>). C does not have this — another major difference between the two languages."
+  },
+
+  // ── Classes & Methods ─────────────────────────────────────
+  {
+    topic: "Classes & Methods",
+    type: "multiple-choice",
+    q: "In Java, which of the following is true about <strong>constructors</strong>?",
+    options: [
+      "A constructor must have a return type of <code>void</code>",
+      "A constructor name can differ from the class name",
+      "A constructor has no return type (not even void) and must share the class name",
+      "Java does not support constructor overloading"
+    ],
+    answer: 2,
+    explanation: "Java constructors <strong>have no return type</strong> (not even <code>void</code>) and <strong>must have the same name as the class</strong>. Java supports constructor overloading — multiple constructors with different parameter lists — to substitute for the lack of default parameter values."
+  },
+  {
+    topic: "Classes & Methods",
+    type: "true-false",
+    q: "Java methods support default parameter values, e.g. <code>void greet(String name = \"World\")</code>.",
+    options: ["True", "False"],
+    answer: 1,
+    explanation: "<strong>False.</strong> Java does <em>not</em> support default parameter values. Instead, the same effect is achieved through <strong>method overloading</strong> — defining multiple methods with the same name but different parameter lists."
+  },
+  {
+    topic: "Classes & Methods",
+    type: "multiple-choice",
+    q: "How many <code>public</code> classes can a single Java source file contain?",
+    options: [
+      "Unlimited",
+      "As many as needed, but only one per package",
+      "Exactly one — and the filename must match that class name",
+      "Two — one for the class and one for its interface"
+    ],
+    answer: 2,
+    explanation: "A Java source file can contain <strong>only one <code>public</code> class</strong>, and the filename must exactly match that class's name. Additional non-public (package-private) classes may appear in the same file, but this is uncommon in practice."
+  },
+
+  // ── Properties / Getters & Setters ────────────────────────
+  {
+    topic: "Getters & Setters",
+    type: "multiple-choice",
+    q: "According to Java conventions, which method name would be used as a <strong>getter</strong> for a boolean field named <code>active</code>?",
+    options: [
+      "<code>getActive()</code>",
+      "<code>active()</code>",
+      "<code>isActive()</code>",
+      "<code>fetchActive()</code>"
+    ],
+    answer: 2,
+    explanation: "By Java convention, boolean getters use the <strong><code>isXxx()</code></strong> prefix. So <code>boolean active</code> → getter is <code>isActive()</code>. For non-boolean fields, use <code>getXxx()</code>, e.g. <code>getName()</code>. Setters are always <code>setXxx()</code> regardless of type."
+  },
+  {
+    topic: "Getters & Setters",
+    type: "multiple-choice",
+    q: `What type of property does the following Java code represent?
+<div class="q-code"><span class="kw">public</span> <span class="ty">String</span> <span class="fn">getName</span>() { <span class="kw">return</span> name; }
+<span class="cm">// no setName() method</span></div>`,
+    options: [
+      "Write-only property",
+      "Read-write property",
+      "Read-only property",
+      "Static property"
+    ],
+    answer: 2,
+    explanation: "A <strong>read-only property</strong> has a getter but no setter. External code can read the value but cannot modify it. This enforces immutability for that field from the outside."
+  },
+
+  // ── Packages & Imports ────────────────────────────────────
+  {
+    topic: "Packages & Imports",
+    type: "multiple-choice",
+    q: "What does <code>import java.util.*;</code> do in Java?",
+    options: [
+      "Imports all classes in the entire Java standard library",
+      "Imports all classes in the <code>java.util</code> package (but not sub-packages)",
+      "Imports only the <code>util</code> class from <code>java</code>",
+      "Creates a new package named <code>java.util</code>"
+    ],
+    answer: 1,
+    explanation: "The wildcard <code>*</code> imports <strong>all classes in <code>java.util</code></strong> (like <code>ArrayList</code>, <code>HashMap</code>, <code>Scanner</code>), but <em>not</em> classes in sub-packages like <code>java.util.concurrent</code>. Those need their own import. Using specific imports (e.g. <code>import java.util.ArrayList;</code>) is preferred for clarity."
+  },
+  {
+    topic: "Packages & Imports",
+    type: "true-false",
+    q: "In Java, the directory structure of source files must mirror the package hierarchy.",
+    options: ["True", "False"],
+    answer: 0,
+    explanation: "<strong>True.</strong> If a class is declared in package <code>edu.calstatela.cs3035</code>, its source file must be in the directory <code>edu/calstatela/cs3035/</code>. The Java compiler uses this structure to locate source and class files."
+  }
+];
+
+// ── Engine ─────────────────────────────────────────────────────
+let current = 0, score = 0, shuffled = [];
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function init() {
+  current = 0; score = 0;
+  shuffled = shuffle(ALL_QUESTIONS.map((_, i) => i));
+  document.getElementById('results-screen').style.display = 'none';
+  document.getElementById('quiz-area').style.display = '';
+  updateProgress();
+  renderQuestion();
+}
+
+function updateProgress() {
+  const total = ALL_QUESTIONS.length;
+  const done  = current;
+  document.getElementById('prog-bar').style.width = ((done / total) * 100) + '%';
+  document.getElementById('prog-label').textContent = `Question ${current + 1} of ${total}`;
+  document.getElementById('score-label').textContent = `Score: ${score}`;
+}
+
+function renderQuestion() {
+  const idx = shuffled[current];
+  const q   = ALL_QUESTIONS[idx];
+  const area = document.getElementById('quiz-area');
+  const isTF = q.type === 'true-false';
+  const letters = ['A','B','C','D'];
+
+  let optsHtml = isTF
+    ? `<div class="tf-options">${q.options.map((o,i) => `<button class="option-btn" onclick="handleAnswer(${i},this)"><span class="opt-letter">${o[0]}</span>${o}</button>`).join('')}</div>`
+    : `<div class="options">${q.options.map((o,i) => `<button class="option-btn" onclick="handleAnswer(${i},this)"><span class="opt-letter">${letters[i]}</span><span>${o}</span></button>`).join('')}</div>`;
+
+  area.innerHTML = `
+    <div class="quiz-card">
+      <div class="card-header">
+        <span class="q-number">Q${current+1}</span>
+        <span class="q-topic">${q.topic}</span>
+        <span class="q-type">${isTF ? 'True / False' : 'Multiple Choice'}</span>
+      </div>
+      <div class="card-body">
+        <p class="question-text">${q.q}</p>
+        ${optsHtml}
+        <div class="explanation" id="explanation">${q.explanation}</div>
+        <div class="nav-row">
+          <button class="next-btn" id="next-btn" onclick="nextQuestion()">
+            ${current + 1 < ALL_QUESTIONS.length ? 'Next Question →' : 'See Results →'}
+          </button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function handleAnswer(chosen, btn) {
+  const q    = ALL_QUESTIONS[shuffled[current]];
+  const btns = document.getElementById('quiz-area').querySelectorAll('.option-btn');
+  btns.forEach(b => b.disabled = true);
+  btns.forEach((b, i) => {
+    if (i === q.answer) b.classList.add(chosen === q.answer ? 'correct' : 'reveal');
+  });
+  if (chosen !== q.answer) btn.classList.add('wrong');
+  if (chosen === q.answer) score++;
+  document.getElementById('explanation').classList.add('show');
+  document.getElementById('next-btn').classList.add('show');
+  updateProgress();
+}
+
+function nextQuestion() {
+  current++;
+  if (current >= ALL_QUESTIONS.length) { showResults(); return; }
+  updateProgress();
+  renderQuestion();
+}
+
+function showResults() {
+  document.getElementById('quiz-area').style.display = 'none';
+  const rs  = document.getElementById('results-screen');
+  rs.style.display = 'block';
+  const total = ALL_QUESTIONS.length;
+  const pct   = Math.round((score / total) * 100);
+  const wrong = total - score;
+  let grade, msg, cls;
+  if (pct >= 85)      { grade='🎉'; msg='Excellent! You have a solid grasp of Java Basics.'; cls='great'; }
+  else if (pct >= 60) { grade='👍'; msg='Good effort! Review the topics you missed and try again.'; cls='ok'; }
+  else                { grade='📖'; msg='Keep studying! Re-read the Java Basics notes and retake the quiz.'; cls='poor'; }
+
+  rs.innerHTML = `
+    <div class="result-score ${cls}">${pct}%</div>
+    <p class="result-label">${score} / ${total} correct</p>
+    <p class="result-msg">${grade} ${msg}</p>
+    <div class="result-breakdown">
+      <div class="rb-item"><div class="rb-num green">${score}</div><div class="rb-label">correct</div></div>
+      <div class="rb-item"><div class="rb-num red">${wrong}</div><div class="rb-label">incorrect</div></div>
+      <div class="rb-item"><div class="rb-num blue">${pct}%</div><div class="rb-label">score</div></div>
+    </div>
+    <button class="restart-btn" onclick="init()">Retake Quiz</button>`;
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Type & Typing Quiz — CS3035</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink:     #0f0d1a;
+    --paper:   #f5f2eb;
+    --accent:  #6b21e8;
+    --green:   #16a34a;
+    --red:     #dc2626;
+    --muted:   #8a86a0;
+    --rule:    #d4cecc;
+    --tag-bg:  #ede8ff;
+    --tag-fg:  #5a1ec8;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Lora', serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.7;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: repeating-linear-gradient(transparent, transparent 27px, var(--rule) 27px, var(--rule) 28px);
+    opacity: .25; pointer-events: none; z-index: 0;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 780px; margin: 0 auto; padding: 50px 36px 100px; }
+
+  /* HEADER */
+  header { border-left: 6px solid var(--accent); padding: 10px 0 10px 24px; margin-bottom: 40px; }
+  .course-tag { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .15em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  h1 { font-family: 'Syne', sans-serif; font-size: clamp(1.9rem,4vw,3rem); font-weight: 800; line-height: 1.05; }
+  h1 span { color: var(--accent); }
+  .subtitle { font-style: italic; color: var(--muted); font-size: .9rem; margin-top: 6px; }
+
+  /* PROGRESS */
+  .progress-bar-wrap { background: #e5e0d8; border-radius: 99px; height: 8px; margin-bottom: 6px; overflow: hidden; }
+  .progress-bar { height: 100%; background: var(--accent); border-radius: 99px; transition: width .4s ease; width: 0%; }
+  .progress-label { font-family: 'JetBrains Mono', monospace; font-size: .78rem; color: var(--muted); margin-bottom: 28px; }
+
+  /* QUESTION CARD */
+  .q-card {
+    background: #fff;
+    border: 1.5px solid var(--rule);
+    border-radius: 8px;
+    padding: 28px 28px 22px;
+    margin-bottom: 20px;
+    display: none;
+    animation: fadeUp .35s ease both;
+  }
+  .q-card.active { display: block; }
+
+  .q-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .q-num { font-family: 'JetBrains Mono', monospace; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .q-topic { font-family: 'Syne', sans-serif; font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; background: var(--tag-bg); color: var(--tag-fg); padding: 2px 10px; border-radius: 3px; }
+
+  .q-text { font-size: 1.02rem; font-weight: 500; margin-bottom: 18px; line-height: 1.5; }
+  .q-text code { font-family: 'JetBrains Mono', monospace; background: var(--tag-bg); color: var(--tag-fg); padding: 1px 6px; border-radius: 3px; font-size: .88em; }
+
+  /* OPTIONS */
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .opt {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 16px; border-radius: 6px;
+    border: 1.5px solid var(--rule);
+    cursor: pointer; font-size: .93rem;
+    transition: border-color .15s, background .15s;
+    background: #faf9f6;
+  }
+  .opt:hover:not(.disabled) { border-color: var(--accent); background: #f5f0ff; }
+  .opt-letter {
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: .82rem;
+    min-width: 24px; height: 24px; border-radius: 50%;
+    background: var(--tag-bg); color: var(--tag-fg);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+    transition: background .15s, color .15s;
+  }
+  .opt.correct { border-color: var(--green); background: #f0fdf4; }
+  .opt.correct .opt-letter { background: var(--green); color: #fff; }
+  .opt.wrong { border-color: var(--red); background: #fff1f1; }
+  .opt.wrong .opt-letter { background: var(--red); color: #fff; }
+  .opt.disabled { cursor: default; }
+  .opt.reveal-correct { border-color: var(--green); background: #f0fdf4; }
+  .opt.reveal-correct .opt-letter { background: var(--green); color: #fff; }
+
+  /* FEEDBACK */
+  .feedback {
+    margin-top: 14px; padding: 12px 16px; border-radius: 6px;
+    font-size: .88rem; line-height: 1.5; display: none;
+  }
+  .feedback.show { display: block; animation: fadeUp .25s ease both; }
+  .feedback.correct-fb { background: #f0fdf4; border-left: 4px solid var(--green); }
+  .feedback.wrong-fb   { background: #fff1f1; border-left: 4px solid var(--red); }
+  .feedback code { font-family: 'JetBrains Mono', monospace; background: rgba(0,0,0,.06); padding: 1px 5px; border-radius: 3px; font-size: .88em; }
+
+  /* NEXT BTN */
+  .next-btn {
+    margin-top: 18px; padding: 10px 28px;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 4px;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: .9rem;
+    cursor: pointer; display: none; letter-spacing: .04em;
+    transition: opacity .15s;
+  }
+  .next-btn:hover { opacity: .88; }
+  .next-btn.show { display: inline-block; }
+
+  /* SCORE SCREEN */
+  #score-screen {
+    display: none; text-align: center;
+    animation: fadeUp .45s ease both;
+    padding: 40px 20px;
+  }
+  #score-screen.show { display: block; }
+  .score-circle {
+    width: 130px; height: 130px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    margin: 0 auto 24px; font-family: 'Syne', sans-serif;
+  }
+  .score-num { font-size: 2.6rem; font-weight: 800; line-height: 1; }
+  .score-denom { font-size: .85rem; opacity: .8; }
+  .score-title { font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 700; margin-bottom: 8px; }
+  .score-sub { color: var(--muted); font-style: italic; margin-bottom: 28px; }
+  .restart-btn {
+    padding: 12px 36px; background: var(--accent); color: #fff;
+    border: none; border-radius: 4px; cursor: pointer;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem;
+    letter-spacing: .04em; transition: opacity .15s;
+  }
+  .restart-btn:hover { opacity: .88; }
+
+  /* RESULT LOG */
+  .result-log { margin-top: 36px; text-align: left; }
+  .result-log h3 { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; margin-bottom: 12px; }
+  .log-item { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--rule); font-size: .86rem; }
+  .log-icon { font-size: .9rem; flex-shrink: 0; margin-top: 2px; }
+  .log-q { flex: 1; color: #444; }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+  @media(max-width:560px) { .wrap { padding: 32px 18px 60px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="course-tag">CS3035 Programming Paradigms &nbsp;·&nbsp; Quiz</p>
+  <h1>Type &amp; <span>Typing</span></h1>
+  <p class="subtitle">20 questions · Multiple choice · Instant feedback</p>
+</header>
+
+<div class="progress-bar-wrap"><div class="progress-bar" id="prog-bar"></div></div>
+<p class="progress-label" id="prog-label">Question 1 of 20</p>
+
+<div id="quiz-area"></div>
+<div id="score-screen"></div>
+
+</div>
+
+<script>
+const questions = [
+  {
+    topic: "Why Types Matter",
+    text: "Which of the following is NOT listed as a reason why types matter in programming languages?",
+    options: ["Determines how data is stored and accessed", "Prevents common errors before they happen", "Makes programs run faster by removing all runtime checks", "Improves code readability and documentation"],
+    answer: 2,
+    feedback: "Types matter because they determine storage/access, prevent errors, improve readability, and enable better tooling (IDE autocomplete, etc.). While static typing can enable some optimizations, eliminating <em>all</em> runtime checks is not a stated benefit."
+  },
+  {
+    topic: "Typing Definition",
+    text: "What does 'typing' mean in the context of a programming language?",
+    options: [
+      "The physical act of writing code on a keyboard",
+      "How a language classifies values into types and enforces type rules",
+      "The process of converting one data format to another",
+      "How quickly a compiler processes source code"
+    ],
+    answer: 1,
+    feedback: "Typing refers to how a programming language classifies values into types and enforces rules about those types — for example, checking that you don't add a string to an integer without conversion."
+  },
+  {
+    topic: "Static vs Dynamic",
+    text: "In a statically typed language, when are types checked?",
+    options: ["At runtime when the program executes", "At compile time before the program runs", "Only when the programmer writes a type annotation", "Whenever the garbage collector runs"],
+    answer: 1,
+    feedback: "Static typing means types are checked at <strong>compile time</strong>. This catches type errors before the program ever runs. Java, C, and Kotlin are examples."
+  },
+  {
+    topic: "Static vs Dynamic",
+    text: "Which pair of languages are both dynamically typed?",
+    options: ["Java and C++", "Python and JavaScript", "Kotlin and Swift", "Go and Rust"],
+    answer: 1,
+    feedback: "Python and JavaScript are both dynamically typed — types are checked at runtime, not compile time. Java/C++/Kotlin/Swift/Go/Rust are all statically typed."
+  },
+  {
+    topic: "Gradual Typing",
+    text: "TypeScript is an example of which typing approach?",
+    options: ["Pure static typing", "Pure dynamic typing", "Gradual typing", "Duck typing"],
+    answer: 2,
+    feedback: "TypeScript uses <strong>gradual typing</strong> — it mixes static and dynamic typing. You can add type annotations where you want strictness, but untyped JavaScript code is still valid TypeScript. Python with type hints is another example."
+  },
+  {
+    topic: "Primitive Types",
+    text: "Which of the following is a primitive type?",
+    options: ["A class defined by the programmer", "An array of integers", "A struct with two fields", "<code>bool</code>"],
+    answer: 3,
+    feedback: "<code>bool</code> is a primitive type — it is built into the language. Arrays, structs, and programmer-defined classes are all composite types built from simpler types."
+  },
+  {
+    topic: "Composite Types",
+    text: "Which of the following is a composite type?",
+    options: ["<code>int</code>", "<code>char</code>", "<code>float</code>", "A list of strings"],
+    answer: 3,
+    feedback: "A list of strings is a composite type — it is built by combining simpler types (the list structure + the string element type). <code>int</code>, <code>char</code>, and <code>float</code> are all primitive types."
+  },
+  {
+    topic: "Type Equivalence",
+    text: "Two structs in C have identical fields but different names. Under <strong>name equivalence</strong>, are they the same type?",
+    options: [
+      "Yes — they have the same structure so they are equivalent",
+      "No — different names mean different types",
+      "It depends on which compiler is used",
+      "Yes, but only if they are defined in the same file"
+    ],
+    answer: 1,
+    feedback: "Under <strong>name equivalence</strong> (used by C/C++ and most modern languages), two types are the same only if they have the same name. Even if <code>struct foo</code> and <code>struct bar</code> have identical fields, they are treated as distinct types."
+  },
+  {
+    topic: "Type Equivalence",
+    text: "Under <strong>structural equivalence</strong>, what determines if two types are the same?",
+    options: [
+      "Their names must match exactly",
+      "They must be declared in the same scope",
+      "They must have the same internal structure",
+      "They must inherit from the same base class"
+    ],
+    answer: 2,
+    feedback: "Structural equivalence judges types by their <strong>structure</strong> — if two types have the same fields/layout, they are considered equivalent regardless of their names. TypeScript uses structural equivalence (structural typing)."
+  },
+  {
+    topic: "Type Coercion",
+    text: "What happens when you write <code>double x = 10;</code> in Java (assigning an int to a double)?",
+    options: [
+      "A compile-time error occurs",
+      "An implicit (automatic) widening conversion happens",
+      "An explicit cast is required",
+      "The value is truncated to fit"
+    ],
+    answer: 1,
+    feedback: "This is an <strong>implicit widening conversion</strong> (also called implicit coercion). The <code>int</code> value 10 is automatically converted to <code>double</code> 10.0. No cast is needed because no data is lost — int always fits into double."
+  },
+  {
+    topic: "Type Coercion",
+    text: "Why does <code>int y = (int) 10.9;</code> require an explicit cast in Java?",
+    options: [
+      "Because Java doesn't support floating point numbers",
+      "Because it is a narrowing conversion that may lose data (the decimal is dropped)",
+      "Because <code>int</code> is a reference type",
+      "Because 10.9 is stored as a string internally"
+    ],
+    answer: 1,
+    feedback: "This is a <strong>narrowing conversion</strong> — converting from a wider type (double) to a narrower type (int) potentially loses information (the .9 decimal part is dropped). Java requires an explicit cast <code>(int)</code> to confirm you understand the data loss."
+  },
+  {
+    topic: "Supertype / Subtype",
+    text: "In Java, you can write <code>List z = new ArrayList();</code>. Why does this work?",
+    options: [
+      "Because Java allows all assignments without type checking",
+      "Because ArrayList is a subtype of List, which is compatible due to inheritance",
+      "Because List and ArrayList are both primitive types",
+      "Because Java uses duck typing for all collections"
+    ],
+    answer: 1,
+    feedback: "<code>ArrayList</code> implements the <code>List</code> interface, making it a <strong>subtype</strong> of <code>List</code>. A subtype is always compatible with its supertype — this is the Liskov Substitution Principle. You can use an ArrayList anywhere a List is expected."
+  },
+  {
+    topic: "Strong vs Weak",
+    text: "JavaScript evaluates <code>'5' - 1</code> as <code>4</code>. What does this demonstrate?",
+    options: [
+      "Static typing",
+      "Strong typing",
+      "Weak typing — automatic coercion between unrelated types",
+      "Duck typing"
+    ],
+    answer: 2,
+    feedback: "This demonstrates <strong>weak typing</strong>. JavaScript automatically coerces the string <code>'5'</code> to a number so the subtraction can proceed. Strong typing (like Python or Java) would throw an error instead of doing this implicit conversion."
+  },
+  {
+    topic: "Strong vs Weak",
+    text: "Python raises a TypeError when you try to add a string and an integer. What does this tell us about Python?",
+    options: [
+      "Python is statically typed",
+      "Python is weakly typed",
+      "Python is strongly typed despite being dynamically typed",
+      "Python does not support arithmetic operations"
+    ],
+    answer: 2,
+    feedback: "This is a key distinction: Python is <strong>dynamically typed</strong> (types checked at runtime) but also <strong>strongly typed</strong> (it does not silently coerce incompatible types). Dynamic ≠ Weak, and Static ≠ Strong."
+  },
+  {
+    topic: "Strong vs Weak",
+    text: "Which statement correctly distinguishes dynamic typing from weak typing?",
+    options: [
+      "They are the same thing — all dynamic languages are weakly typed",
+      "Dynamic typing = when types are checked; weak typing = how strictly type rules are enforced",
+      "Weak typing is faster than dynamic typing",
+      "Static typing and weak typing always go together"
+    ],
+    answer: 1,
+    feedback: "These are orthogonal concepts. <strong>Dynamic/Static</strong> refers to <em>when</em> types are checked (runtime vs compile time). <strong>Strong/Weak</strong> refers to <em>how strictly</em> type rules are enforced (are implicit conversions allowed?). Python = dynamic + strong. JavaScript = dynamic + weak. Java = static + strong."
+  },
+  {
+    topic: "Duck Typing",
+    text: 'What is the core idea behind duck typing?',
+    options: [
+      "An object's type must be declared before it can be used",
+      "If an object has the required methods/properties, it can be used for that purpose — regardless of its actual type",
+      "Only objects of type 'Duck' can be used in bird-related functions",
+      "Type checking is performed at compile time using structural analysis"
+    ],
+    answer: 1,
+    feedback: "Duck typing: <em>\"If it walks like a duck and quacks like a duck, it's a duck.\"</em> You don't check what type an object is — you just check if it has the methods you need. If a <code>Dog</code> and a <code>Person</code> both have a <code>speak()</code> method, both can be passed to <code>make_it_speak()</code>."
+  },
+  {
+    topic: "Duck Typing",
+    text: "Duck typing is a form of which broader typing approach?",
+    options: ["Static typing", "Dynamic typing", "Gradual typing", "Strong typing"],
+    answer: 1,
+    feedback: "Duck typing is a form of <strong>dynamic typing</strong>. The check for whether an object has the required method happens at <em>runtime</em>, not compile time. This is why duck typing errors (AttributeError in Python) only appear when the code is executed."
+  },
+  {
+    topic: "Duck Typing",
+    text: "In Java, to achieve similar behavior to Python's duck typing, what do you typically need?",
+    options: [
+      "Nothing — Java supports duck typing natively",
+      "A defined interface that both classes implement",
+      "A shared superclass with the method declared as abstract",
+      "Either an interface or an abstract superclass"
+    ],
+    answer: 3,
+    feedback: "Java uses <strong>nominal typing</strong>, so to use different classes interchangeably, they must share a declared interface (e.g., <code>Speakable</code>) or inherit from a common abstract class. Both approaches work. Python's duck typing is more flexible since it needs neither."
+  },
+  {
+    topic: "Type Inference",
+    text: "What does type inference allow a programmer to do?",
+    options: [
+      "Run programs without any type checking",
+      "Omit explicit type annotations and let the compiler/interpreter deduce the type from context",
+      "Convert between types without any casting",
+      "Write code that works with any type at runtime"
+    ],
+    answer: 1,
+    feedback: "Type inference allows the compiler or interpreter to automatically deduce the type of a variable from its context (e.g., its initial value). For example, <code>var a = 10</code> — the system infers <code>a</code> is an <code>int</code>. Kotlin, Swift, and Scala use this heavily."
+  },
+  {
+    topic: "Type Inference",
+    text: "Given <code>var d = x ? new Dog() : new Animal();</code>, what type would be inferred for <code>d</code>?",
+    options: [
+      "<code>Dog</code>",
+      "<code>Object</code>",
+      "<code>Animal</code> — the common supertype of both branches",
+      "A compile error — can't infer type from a conditional"
+    ],
+    answer: 2,
+    feedback: "When a conditional expression can produce two different types, the compiler infers the <strong>most specific common supertype</strong>. Since <code>Dog</code> is a subtype of <code>Animal</code>, both branches can safely be represented as <code>Animal</code>. This is why <code>d</code> would be inferred as <code>Animal</code>."
+  }
+];
+
+let current = 0;
+let score = 0;
+let answered = [];
+let results = [];
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Shuffle question order but keep answer index synced
+const shuffledQs = shuffle(questions.map((q, i) => i)).map(i => {
+  const q = questions[i];
+  // Shuffle options too
+  const idxMap = q.options.map((_, j) => j);
+  const shuffled = shuffle(idxMap);
+  const newAnswer = shuffled.indexOf(q.answer);
+  return {
+    ...q,
+    options: shuffled.map(j => q.options[j]),
+    answer: newAnswer
+  };
+});
+
+function render() {
+  const area = document.getElementById('quiz-area');
+  area.innerHTML = '';
+
+  const q = shuffledQs[current];
+  const letters = ['A', 'B', 'C', 'D'];
+
+  const card = document.createElement('div');
+  card.className = 'q-card active';
+  card.innerHTML = `
+    <div class="q-meta">
+      <span class="q-num">Q${current + 1} / ${shuffledQs.length}</span>
+      <span class="q-topic">${q.topic}</span>
+    </div>
+    <div class="q-text">${q.text}</div>
+    <div class="options" id="opts">
+      ${q.options.map((opt, i) => `
+        <div class="opt" data-i="${i}" onclick="choose(${i})">
+          <span class="opt-letter">${letters[i]}</span>
+          <span>${opt}</span>
+        </div>
+      `).join('')}
+    </div>
+    <div class="feedback" id="fb"></div>
+    <button class="next-btn" id="nxt" onclick="next()">
+      ${current < shuffledQs.length - 1 ? 'Next Question →' : 'See Results'}
+    </button>
+  `;
+  area.appendChild(card);
+  updateProgress();
+}
+
+function choose(i) {
+  if (answered[current]) return;
+  answered[current] = true;
+
+  const q = shuffledQs[current];
+  const opts = document.querySelectorAll('.opt');
+  const fb = document.getElementById('fb');
+  const nxt = document.getElementById('nxt');
+
+  opts.forEach(o => o.classList.add('disabled'));
+
+  if (i === q.answer) {
+    score++;
+    opts[i].classList.add('correct');
+    fb.className = 'feedback show correct-fb';
+    fb.innerHTML = `✅ <strong>Correct!</strong> ${q.feedback}`;
+    results.push({ q: q.text, correct: true });
+  } else {
+    opts[i].classList.add('wrong');
+    opts[q.answer].classList.add('reveal-correct');
+    fb.className = 'feedback show wrong-fb';
+    fb.innerHTML = `❌ <strong>Not quite.</strong> ${q.feedback}`;
+    results.push({ q: q.text, correct: false });
+  }
+
+  nxt.classList.add('show');
+}
+
+function next() {
+  current++;
+  if (current >= shuffledQs.length) {
+    showScore();
+  } else {
+    render();
+  }
+}
+
+function updateProgress() {
+  const pct = (current / shuffledQs.length) * 100;
+  document.getElementById('prog-bar').style.width = pct + '%';
+  document.getElementById('prog-label').textContent = `Question ${current + 1} of ${shuffledQs.length}`;
+}
+
+function showScore() {
+  document.getElementById('quiz-area').innerHTML = '';
+  document.getElementById('prog-bar').style.width = '100%';
+  document.getElementById('prog-label').textContent = `Complete!`;
+
+  const pct = Math.round((score / shuffledQs.length) * 100);
+  let title, sub;
+  if (pct >= 90)      { title = '🏆 Excellent!';     sub = 'Outstanding mastery of Type & Typing concepts.'; }
+  else if (pct >= 75) { title = '👍 Good Job!';       sub = 'Solid understanding — review a few topics.'; }
+  else if (pct >= 55) { title = '📖 Keep Studying';   sub = 'A few gaps to fill — revisit your notes.'; }
+  else                { title = '💪 Keep Going!';      sub = 'Review the notes and try again — you\'ve got this!'; }
+
+  const log = results.map((r, i) => `
+    <div class="log-item">
+      <span class="log-icon">${r.correct ? '✅' : '❌'}</span>
+      <span class="log-q">Q${i + 1}: ${r.q.replace(/<code>/g,'<code>').substring(0,90)}${r.q.length > 90 ? '…' : ''}</span>
+    </div>
+  `).join('');
+
+  const screen = document.getElementById('score-screen');
+  screen.className = 'show';
+  screen.innerHTML = `
+    <div class="score-circle">
+      <span class="score-num">${score}</span>
+      <span class="score-denom">/ ${shuffledQs.length}</span>
+    </div>
+    <h2 class="score-title">${title}</h2>
+    <p class="score-sub">${sub} &nbsp;·&nbsp; ${pct}%</p>
+    <button class="restart-btn" onclick="restart()">Try Again</button>
+    <div class="result-log">
+      <h3>Your Answers</h3>
+      ${log}
+    </div>
+  `;
+  screen.scrollIntoView({ behavior: 'smooth' });
+}
+
+function restart() {
+  current = 0; score = 0; answered = []; results = [];
+  // Re-shuffle
+  shuffledQs.length = 0;
+  const newOrder = shuffle(questions.map((_, i) => i)).map(i => {
+    const q = questions[i];
+    const idxMap = q.options.map((_, j) => j);
+    const sh = shuffle(idxMap);
+    return { ...q, options: sh.map(j => q.options[j]), answer: sh.indexOf(q.answer) };
+  });
+  newOrder.forEach(q => shuffledQs.push(q));
+  document.getElementById('score-screen').className = '';
+  document.getElementById('score-screen').innerHTML = '';
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
