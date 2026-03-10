@@ -2,50 +2,293 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>CS4440</title>
+  <title>Course Portal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg: #0c0c0f;
+      --surface: #13131a;
+      --border: #1e1e2e;
+      --accent1: #6ee7b7;
+      --accent2: #818cf8;
+      --text: #e8e8f0;
+      --muted: #52526e;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      margin: 0;
-      padding: 40px;
-      text-align: center;
+      font-family: 'DM Mono', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 60px 40px;
+      overflow-x: hidden;
     }
+
+    /* Background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 48px 48px;
+      opacity: 0.5;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Glow blobs */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -200px;
+      left: -200px;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(110,231,183,0.06) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      margin-bottom: 72px;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    .label {
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent1);
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+
     h1 {
-      margin-bottom: 40px;
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
-    .links {
+
+    .subtitle {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: 0.05em;
+    }
+
+    /* Course cards */
+    .courses {
       display: flex;
-      justify-content: center;
-      gap: 40px;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .course-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      transition: border-color 0.3s, transform 0.3s;
+      animation: fadeUp 0.6s ease both;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .course-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--card-accent), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .course-card:hover {
+      border-color: var(--card-accent);
+      transform: translateY(-2px);
+    }
+
+    .course-card:hover::before {
+      opacity: 1;
+    }
+
+    .course-card:nth-child(1) { --card-accent: #6ee7b7; animation-delay: 0.1s; }
+    .course-card:nth-child(2) { --card-accent: #818cf8; animation-delay: 0.2s; }
+
+    .course-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .course-id {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--card-accent);
+    }
+
+    .course-badge {
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--border);
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+    }
+
+    .course-links {
+      display: flex;
+      gap: 12px;
       flex-wrap: wrap;
     }
-    a {
-      display: block;
-      padding: 20px 40px;
-      background: white;
-      border-radius: 8px;
+
+    .link-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 22px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 10px;
       text-decoration: none;
-      color: #333;
-      font-weight: bold;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-      transition: 0.2s;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s;
+      flex: 1;
+      min-width: 160px;
     }
-    a:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+
+    .link-btn:hover {
+      background: rgba(255,255,255,0.05);
+      border-color: var(--card-accent);
+      color: var(--card-accent);
+      transform: translateY(-1px);
+    }
+
+    .link-btn .icon {
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .link-btn .arrow {
+      margin-left: auto;
+      opacity: 0;
+      transform: translateX(-4px);
+      transition: opacity 0.2s, transform 0.2s;
+      font-style: normal;
+      font-size: 12px;
+    }
+
+    .link-btn:hover .arrow {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    /* Footer */
+    footer {
+      margin-top: 64px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      animation: fadeUp 0.6s ease 0.4s both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 480px) {
+      body { padding: 40px 20px; }
+      .link-btn { min-width: 100%; }
     }
   </style>
 </head>
 <body>
+  <div class="container">
+    <header>
+      <div class="label">// Course Portal</div>
+      <h1>Study<br>Materials</h1>
+      <p class="subtitle">notes &amp; quizzes — organized by course</p>
+    </header>
 
-  <h1>CS4440</h1>
+    <div class="courses">
 
-  <div class="links">
-    <a href="CS4440/notes/">📘 Notes</a>
-    <a href="CS4440/quizes/">📝 Quizzes</a>
+      <!-- CS4440 -->
+      <div class="course-card">
+        <div class="course-header">
+          <span class="course-id">CS4440</span>
+          <span class="course-badge">Active</span>
+        </div>
+        <div class="course-links">
+          <a class="link-btn" href="CS4440/notes/">
+            <span class="icon">📘</span>
+            Notes
+            <i class="arrow">→</i>
+          </a>
+          <a class="link-btn" href="CS4440/quizes/">
+            <span class="icon">📝</span>
+            Quizzes
+            <i class="arrow">→</i>
+          </a>
+        </div>
+      </div>
+
+      <!-- CS3035 -->
+      <div class="course-card">
+        <div class="course-header">
+          <span class="course-id">CS3035</span>
+          <span class="course-badge">Active</span>
+        </div>
+        <div class="course-links">
+          <a class="link-btn" href="CS3035/notes/">
+            <span class="icon">📘</span>
+            Notes
+            <i class="arrow">→</i>
+          </a>
+          <a class="link-btn" href="CS3035/quizzes/">
+            <span class="icon">📝</span>
+            Quizzes
+            <i class="arrow">→</i>
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+    <footer>
+      <span>— course portal —</span>
+    </footer>
   </div>
-
 </body>
 </html>
