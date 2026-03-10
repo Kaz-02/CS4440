@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inheritance & Polymorphism — CS3035 Study Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f0d1a;
+    --paper: #f5f2eb;
+    --accent: #6b21e8;
+    --accent2: #e8213a;
+    --accent3: #21a8e8;
+    --green: #16a34a;
+    --muted: #8a86a0;
+    --rule: #d4cecc;
+    --code-bg: #1a1628;
+    --code-fg: #e2deff;
+    --note-bg: #fff8e8;
+    --tag-bg: #ede8ff;
+    --tag-fg: #5a1ec8;
+    --light-blue: #e8f4ff;
+    --light-green: #f0fdf4;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Lora', Georgia, serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.7;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+      transparent, transparent 27px, var(--rule) 27px, var(--rule) 28px
+    );
+    opacity: 0.3;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 60px 40px 100px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    border-left: 6px solid var(--accent);
+    padding: 12px 0 12px 28px;
+    margin-bottom: 52px;
+    animation: slideIn .5s ease both;
+  }
+  .course-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.2rem, 5vw, 3.6rem);
+    font-weight: 800;
+    line-height: 1.05;
+  }
+  h1 span { color: var(--accent); }
+  .subtitle {
+    font-style: italic;
+    color: var(--muted);
+    font-size: .95rem;
+    margin-top: 8px;
+  }
+
+  /* ── SECTIONS ── */
+  section {
+    margin-bottom: 52px;
+    animation: fadeUp .45s ease both;
+  }
+  section:nth-child(2)  { animation-delay:.05s }
+  section:nth-child(3)  { animation-delay:.10s }
+  section:nth-child(4)  { animation-delay:.15s }
+  section:nth-child(5)  { animation-delay:.20s }
+  section:nth-child(6)  { animation-delay:.25s }
+  section:nth-child(7)  { animation-delay:.30s }
+  section:nth-child(8)  { animation-delay:.35s }
+  section:nth-child(9)  { animation-delay:.40s }
+  section:nth-child(10) { animation-delay:.45s }
+  section:nth-child(11) { animation-delay:.50s }
+
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--ink);
+  }
+  .sec-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.35rem;
+    font-weight: 700;
+  }
+
+  p { margin-bottom: .8em; font-size: .97rem; }
+
+  ul { list-style: none; margin: 10px 0 14px; }
+  ul li {
+    position: relative;
+    padding-left: 22px;
+    margin-bottom: 6px;
+    font-size: .95rem;
+  }
+  ul li::before {
+    content: '◆';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-size: .6rem;
+    top: 6px;
+  }
+
+  /* ── CODE ── */
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .82rem;
+    line-height: 1.7;
+    padding: 20px 24px;
+    border-radius: 4px;
+    margin: 14px 0;
+    overflow-x: auto;
+    border-left: 3px solid var(--accent);
+  }
+  .lang-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .7rem;
+    letter-spacing: .1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .kw  { color: #c792ea; }
+  .fn  { color: #82aaff; }
+  .str { color: #c3e88d; }
+  .cm  { color: #546e7a; font-style: italic; }
+  .tp  { color: #ffcb6b; }
+  .nb  { color: #f78c6c; }
+  .an  { color: #ff9cac; } /* annotation */
+
+  /* ── NOTE / QUOTE ── */
+  .note {
+    background: var(--note-bg);
+    border-left: 4px solid #f0c040;
+    padding: 12px 16px;
+    font-size: .88rem;
+    margin: 14px 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .note::before { content: '💡 '; }
+
+  blockquote {
+    border-left: 4px solid var(--accent);
+    padding: 8px 20px;
+    margin: 14px 0;
+    font-style: italic;
+    color: var(--accent);
+    font-size: 1.05rem;
+  }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x: auto; margin: 14px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  thead tr { background: var(--ink); color: var(--paper); }
+  thead th {
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    padding: 10px 14px;
+    text-align: left;
+    letter-spacing: .04em;
+  }
+  tbody tr:nth-child(odd)  { background: #fffffe; }
+  tbody tr:nth-child(even) { background: #eeeae0; }
+  tbody td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  tbody td:first-child { font-family: 'Syne', sans-serif; font-weight: 600; }
+
+  /* ── TAGS ── */
+  .tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+  .tag {
+    background: var(--tag-bg);
+    color: var(--tag-fg);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .75rem;
+    padding: 3px 10px;
+    border-radius: 2px;
+  }
+
+  /* ── HIERARCHY DIAGRAM ── */
+  .tree {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .88rem;
+    background: #1a1628;
+    color: #e2deff;
+    padding: 24px 32px;
+    border-radius: 4px;
+    margin: 14px 0;
+    line-height: 2;
+    border-left: 3px solid var(--accent3);
+  }
+  .tree .node-root  { color: #ffcb6b; font-weight: 700; }
+  .tree .node-child { color: #82aaff; }
+  .tree .node-iface { color: #c3e88d; font-style: italic; }
+  .tree .connector  { color: #546e7a; }
+
+  /* ── SPECTRUM BAR ── */
+  .spectrum {
+    display: flex;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 14px 0;
+    font-family: 'Syne', sans-serif;
+    font-size: .82rem;
+    font-weight: 700;
+  }
+  .spectrum div {
+    flex: 1;
+    padding: 14px 16px;
+    text-align: center;
+  }
+  .sp-class   { background: #2d1f5e; color: #c3b8f8; }
+  .sp-abstract{ background: #1f3a5e; color: #82aaff; }
+  .sp-iface   { background: #1a4a2e; color: #86efac; }
+
+  /* ── SIDE-BY-SIDE CODE ── */
+  .code-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 14px 0;
+  }
+  .code-pair > div { min-width: 0; }
+
+  /* ── Q&A BOX ── */
+  .qa {
+    border: 1.5px solid var(--rule);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 14px 0;
+  }
+  .qa-q {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 10px 16px;
+    font-family: 'Syne', sans-serif;
+    font-size: .88rem;
+    font-weight: 700;
+  }
+  .qa-a {
+    background: var(--light-blue);
+    padding: 12px 16px;
+    font-size: .88rem;
+  }
+
+  /* ── OUTPUT BOX ── */
+  .output {
+    background: #0d1117;
+    color: #c3e88d;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .85rem;
+    padding: 14px 20px;
+    border-radius: 4px;
+    margin: 8px 0 14px;
+  }
+  .output::before {
+    content: '▶ Output';
+    display: block;
+    color: #546e7a;
+    font-size: .75rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* ── OVERRIDE vs OVERLOAD TABLE ── */
+  .cmp {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 14px 0;
+  }
+  .cmp-box {
+    padding: 16px 18px;
+    border: 1.5px solid var(--rule);
+    border-radius: 4px;
+  }
+  .cmp-box.a { border-color: var(--accent); }
+  .cmp-box.b { border-color: var(--accent3); }
+  .cmp-label {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: .85rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .cmp-box.a .cmp-label { color: var(--accent); }
+  .cmp-box.b .cmp-label { color: var(--accent3); }
+  .cmp-box p { font-size: .88rem; margin-bottom: 6px; }
+
+  /* ── SUMMARY ── */
+  .summary-section {
+    background: var(--ink);
+    padding: 36px 40px;
+    border-radius: 6px;
+  }
+  .summary-section .sec-head { border-color: var(--accent); }
+  .summary-section h2,
+  .summary-section .sec-num  { color: var(--paper); }
+  .summary-section .sec-num  { color: var(--accent); }
+  .summary-section table { font-size: .86rem; }
+  .summary-section thead tr { background: var(--accent); }
+  .summary-section tbody tr:nth-child(odd)  { background:#1f1b30; color:#ddd8f8; }
+  .summary-section tbody tr:nth-child(even) { background:#272038; color:#ddd8f8; }
+  .summary-section tbody td { border-color: #3a3350; }
+  .summary-section tbody td:first-child { color: #c3b8f8; }
+
+  /* ── FOOTER ── */
+  footer {
+    margin-top: 60px;
+    padding-top: 20px;
+    border-top: 1.5px solid var(--rule);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .8rem;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes slideIn {
+    from { opacity:0; transform:translateX(-20px); }
+    to   { opacity:1; transform:translateX(0); }
+  }
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(18px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  ic { font-family: 'JetBrains Mono', monospace; background:#ede8ff; color:#5a1ec8; padding:1px 6px; border-radius:3px; font-size:.88em; }
+
+  @media(max-width:600px){
+    .wrap { padding:36px 20px 60px; }
+    .cmp, .code-pair { grid-template-columns:1fr; }
+    .summary-section { padding:24px 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="course-tag">CS3035 Programming Paradigms &nbsp;·&nbsp; Cal State LA</p>
+  <h1>Inheritance &amp; <span>Polymorphism</span></h1>
+  <p class="subtitle">Study notes compiled from lecture slides</p>
+</header>
+
+<!-- 1. Motivating Example -->
+<section>
+  <div class="sec-head"><span class="sec-num">01</span><h2>Motivating Example — Employee System</h2></div>
+  <p>Consider a payroll system that needs to handle different kinds of employees:</p>
+  <div class="tree">
+    <div><span class="node-root">Employee</span>  <span class="cm">← shared: name, id, …</span></div>
+    <div><span class="connector">├── </span><span class="node-child">FullTimeEmployee</span>  <span class="cm">← fixed monthly salary</span></div>
+    <div><span class="connector">└── </span><span class="node-child">PartTimeEmployee</span>  <span class="cm">← paid by the hour</span></div>
+  </div>
+  <p>Without inheritance, you'd copy shared fields and methods into every class — causing duplication and maintenance headaches. <strong>Inheritance</strong> solves this.</p>
+</section>
+
+<!-- 2. Inheritance -->
+<section>
+  <div class="sec-head"><span class="sec-num">02</span><h2>Inheritance</h2></div>
+  <ul>
+    <li><strong>Superclass</strong> (a.k.a. base class) — holds <em>common</em> data and operations shared by all subtypes</li>
+    <li><strong>Subclass</strong> (a.k.a. derived class) — holds <em>specific</em> data and operations unique to that type</li>
+    <li>Subclass automatically <strong>inherits</strong> all accessible members of the superclass</li>
+  </ul>
+
+  <div class="code-pair">
+    <div>
+      <p class="lang-label">Java</p>
+      <pre><span class="kw">class</span> <span class="tp">Animal</span> {
+  <span class="kw">void</span> <span class="fn">eat</span>() {
+    System.out.<span class="fn">println</span>(
+      <span class="str">"This animal eats food."</span>
+    );
+  }
+}
+
+<span class="kw">class</span> <span class="tp">Dog</span> <span class="kw">extends</span> <span class="tp">Animal</span> {
+  <span class="kw">void</span> <span class="fn">bark</span>() {
+    System.out.<span class="fn">println</span>(
+      <span class="str">"The dog barks."</span>
+    );
+  }
+}
+
+<span class="tp">Dog</span> d = <span class="kw">new</span> <span class="tp">Dog</span>();
+d.<span class="fn">eat</span>();   <span class="cm">// inherited ✅</span>
+d.<span class="fn">bark</span>();  <span class="cm">// own method ✅</span></pre>
+    </div>
+    <div>
+      <p class="lang-label">Python</p>
+      <pre><span class="kw">class</span> <span class="tp">Animal</span>:
+  <span class="kw">def</span> <span class="fn">eat</span>(<span class="nb">self</span>):
+    <span class="nb">print</span>(
+      <span class="str">"This animal eats food."</span>
+    )
+
+<span class="kw">class</span> <span class="tp">Dog</span>(<span class="tp">Animal</span>):  <span class="cm"># inherits</span>
+  <span class="kw">def</span> <span class="fn">bark</span>(<span class="nb">self</span>):
+    <span class="nb">print</span>(
+      <span class="str">"The dog barks."</span>
+    )
+
+d = <span class="tp">Dog</span>()
+d.<span class="fn">eat</span>()   <span class="cm"># inherited ✅</span>
+d.<span class="fn">bark</span>()  <span class="cm"># own method ✅</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- 3. Benefits -->
+<section>
+  <div class="sec-head"><span class="sec-num">03</span><h2>Benefits of Inheritance</h2></div>
+  <ul>
+    <li><strong>Code reuse</strong> — write shared logic once in the superclass, not in every subclass</li>
+    <li><strong>Reduced redundancy</strong> → easier to maintain; fix a bug once, fixed everywhere</li>
+    <li><strong>Better real-world modeling</strong> — class hierarchies often mirror domain concepts naturally</li>
+    <li><strong>Foundation for polymorphism</strong> — enables writing flexible, general-purpose code (more below)</li>
+  </ul>
+</section>
+
+<!-- 4. Multiple Inheritance -->
+<section>
+  <div class="sec-head"><span class="sec-num">04</span><h2>Multiple Inheritance &amp; MRO (Python)</h2></div>
+  <p>Python supports inheriting from <strong>multiple</strong> parent classes simultaneously. When a method name exists in more than one parent, Python uses the <strong>Method Resolution Order (MRO)</strong> — checking classes from <em>left to right</em> in the inheritance list.</p>
+  <pre><span class="kw">class</span> <span class="tp">A</span>:
+  <span class="kw">def</span> <span class="fn">greet</span>(<span class="nb">self</span>): <span class="nb">print</span>(<span class="str">"Hello from A"</span>)
+
+<span class="kw">class</span> <span class="tp">B</span>:
+  <span class="kw">def</span> <span class="fn">greet</span>(<span class="nb">self</span>): <span class="nb">print</span>(<span class="str">"Hello from B"</span>)
+
+<span class="kw">class</span> <span class="tp">C</span>(<span class="tp">A</span>, <span class="tp">B</span>):   <span class="cm"># A is checked first (left→right)</span>
+  <span class="kw">pass</span>
+
+<span class="tp">C</span>().<span class="fn">greet</span>()   <span class="cm"># → "Hello from A"</span></pre>
+  <div class="note">Java does <strong>not</strong> support multiple class inheritance (to avoid the "diamond problem"), but a class can implement multiple <em>interfaces</em>.</div>
+</section>
+
+<!-- 5. Inheritance vs Encapsulation -->
+<section>
+  <div class="sec-head"><span class="sec-num">05</span><h2>Inheritance vs. Encapsulation</h2></div>
+  <div class="cmp">
+    <div class="cmp-box a">
+      <div class="cmp-label">Inheritance</div>
+      <p>Subclass wants to <strong>reuse</strong> superclass code — needs visibility into its internals.</p>
+    </div>
+    <div class="cmp-box b">
+      <div class="cmp-label">Encapsulation</div>
+      <p>Changes to one class's <strong>implementation</strong> should not break other code, including subclasses.</p>
+    </div>
+  </div>
+  <p>These two goals are in tension. In practice: find a <strong>pragmatic balance</strong>. Use access modifiers to expose only what subclasses truly need.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Modifier</th><th>Same Class</th><th>Subclass</th><th>Same Package</th><th>Everywhere</th></tr></thead>
+      <tbody>
+        <tr><td>private</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr>
+        <tr><td>(default)</td><td>✅</td><td>❌*</td><td>✅</td><td>❌</td></tr>
+        <tr><td>protected</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr>
+        <tr><td>public</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">Python uses naming <em>convention</em> instead: <ic>name</ic> = public, <ic>_name</ic> = protected (by convention), <ic>__name</ic> = name-mangled (pseudo-private).</div>
+</section>
+
+<!-- 6. Method Overriding -->
+<section>
+  <div class="sec-head"><span class="sec-num">06</span><h2>Method Overriding</h2></div>
+  <p>A subclass <strong>re-implements</strong> a superclass method with the <em>exact same signature</em> to provide specialized behavior.</p>
+  <pre><span class="cm">// Java</span>
+<span class="kw">class</span> <span class="tp">Animal</span> {
+  <span class="kw">void</span> <span class="fn">eat</span>() { System.out.<span class="fn">println</span>(<span class="str">"This animal eats food."</span>); }
+}
+
+<span class="kw">class</span> <span class="tp">Dog</span> <span class="kw">extends</span> <span class="tp">Animal</span> {
+  <span class="an">@Override</span>
+  <span class="kw">void</span> <span class="fn">eat</span>() { System.out.<span class="fn">println</span>(<span class="str">"The dog eats treats."</span>); }
+}
+
+<span class="tp">Dog</span> d = <span class="kw">new</span> <span class="tp">Dog</span>();
+d.<span class="fn">eat</span>();</pre>
+  <div class="output">The dog eats treats.</div>
+
+  <div class="cmp">
+    <div class="cmp-box a">
+      <div class="cmp-label">Overriding</div>
+      <p>Same method name <strong>and</strong> same parameter types.</p>
+      <p>Involves a <strong>superclass–subclass</strong> relationship.</p>
+      <p>Resolved at <strong>runtime</strong> (dynamic binding).</p>
+    </div>
+    <div class="cmp-box b">
+      <div class="cmp-label">Overloading</div>
+      <p>Same method name but <strong>different</strong> parameter types/count.</p>
+      <p>Can happen in the <strong>same class</strong>.</p>
+      <p>Resolved at <strong>compile time</strong>.</p>
+    </div>
+  </div>
+  <div class="note"><strong>Why <ic>@Override</ic>?</strong> It tells the compiler to verify that you're actually overriding a superclass method — if you mistype the method name, it becomes an error instead of silently creating a new unrelated method.</div>
+</section>
+
+<!-- 7. super -->
+<section>
+  <div class="sec-head"><span class="sec-num">07</span><h2>Referencing the Superclass with <ic>super</ic></h2></div>
+  <p>Subclasses can still call the original superclass implementation using <ic>super</ic>.</p>
+  <div class="code-pair">
+    <div>
+      <p class="lang-label">Java</p>
+      <pre><span class="kw">class</span> <span class="tp">Dog</span> <span class="kw">extends</span> <span class="tp">Animal</span> {
+  <span class="an">@Override</span>
+  <span class="kw">void</span> <span class="fn">eat</span>() {
+    <span class="cm">// call parent first</span>
+    <span class="kw">super</span>.<span class="fn">eat</span>();
+    System.out.<span class="fn">println</span>(
+      <span class="str">"...and then some treats."</span>
+    );
+  }
+}</pre>
+    </div>
+    <div>
+      <p class="lang-label">Python</p>
+      <pre><span class="kw">class</span> <span class="tp">Dog</span>(<span class="tp">Animal</span>):
+  <span class="kw">def</span> <span class="fn">eat</span>(<span class="nb">self</span>):
+    <span class="cm"># call parent first</span>
+    <span class="fn">super</span>().<span class="fn">eat</span>()
+    <span class="nb">print</span>(
+      <span class="str">"...and then some treats."</span>
+    )</pre>
+    </div>
+  </div>
+</section>
+
+<!-- 8. Abstract Class -->
+<section>
+  <div class="sec-head"><span class="sec-num">08</span><h2>Abstract Classes</h2></div>
+  <p>Sometimes a superclass method <em>cannot</em> be meaningfully implemented at that level — it depends on the specific subclass. An <strong>abstract class</strong> lets you declare such methods without implementing them.</p>
+
+  <div class="tree">
+    <div><span class="node-root">Employee</span>  <span class="cm">← abstract: calculatePay() has no implementation here</span></div>
+    <div><span class="connector">├── </span><span class="node-child">FullTimeEmployee</span>  <span class="cm">← returns fixed monthly salary</span></div>
+    <div><span class="connector">└── </span><span class="node-child">PartTimeEmployee</span>  <span class="cm">← returns hoursWorked × hourlyRate</span></div>
+  </div>
+
+  <pre><span class="cm">// Java</span>
+<span class="kw">abstract class</span> <span class="tp">Employee</span> {
+  <span class="tp">String</span> name;
+  <span class="tp">int</span> id;
+  <span class="cm">// No body — subclasses MUST implement this</span>
+  <span class="kw">abstract double</span> <span class="fn">calculatePay</span>(<span class="tp">YearMonth</span> month);
+}</pre>
+
+  <ul>
+    <li>Must be declared with the <ic>abstract</ic> keyword</li>
+    <li>Can contain a mix of <strong>concrete</strong> and <strong>abstract</strong> methods</li>
+    <li><strong>Cannot be instantiated</strong> — <ic>new Employee()</ic> would be a compile error</li>
+    <li>Subclasses must implement all abstract methods (or be abstract themselves)</li>
+  </ul>
+
+  <div class="qa">
+    <div class="qa-q">❓ Why not just create an Employee object directly?</div>
+    <div class="qa-a">It doesn't make sense — you can't calculate pay without knowing whether someone is full-time or part-time. The abstract class enforces that only concrete subclasses (which know how to calculate pay) can be instantiated.</div>
+  </div>
+</section>
+
+<!-- 9. Class → Abstract → Interface spectrum -->
+<section>
+  <div class="sec-head"><span class="sec-num">09</span><h2>Class → Abstract Class → Interface</h2></div>
+  <p>These three constructs form a spectrum of how much implementation they provide:</p>
+
+  <div class="spectrum">
+    <div class="sp-class">Class<br><span style="font-weight:400;font-size:.8rem;">All methods concrete</span></div>
+    <div class="sp-abstract">Abstract Class<br><span style="font-weight:400;font-size:.8rem;">Some methods abstract</span></div>
+    <div class="sp-iface">Interface<br><span style="font-weight:400;font-size:.8rem;">All methods abstract</span></div>
+  </div>
+
+  <pre><span class="cm">// Java Interface</span>
+<span class="kw">interface</span> <span class="tp">Vehicle</span> {
+  <span class="kw">int</span> MAX_SPEED = 120;          <span class="cm">// implicitly public static final</span>
+  <span class="kw">void</span> <span class="fn">start</span>();                  <span class="cm">// implicitly public abstract</span>
+  <span class="kw">void</span> <span class="fn">stop</span>();
+  <span class="kw">int</span>  <span class="fn">getSpeed</span>();
+}
+
+<span class="kw">class</span> <span class="tp">Truck</span> <span class="kw">implements</span> <span class="tp">Vehicle</span> {
+  <span class="kw">public void</span> <span class="fn">start</span>()    { <span class="cm">/* … */</span> }
+  <span class="kw">public void</span> <span class="fn">stop</span>()     { <span class="cm">/* … */</span> }
+  <span class="kw">public int</span>  <span class="fn">getSpeed</span>() { <span class="cm">/* … */</span> }
+}</pre>
+
+  <ul>
+    <li>A class can <strong>implement multiple interfaces</strong> (solving Java's no-multiple-inheritance restriction)</li>
+    <li>Interfaces can extend other interfaces (sub-interfaces)</li>
+    <li>Key principle: <strong>"Program to an interface, not an implementation"</strong></li>
+  </ul>
+
+  <pre><span class="cm">// Good: variable typed as the interface</span>
+<span class="tp">List</span> list = <span class="kw">new</span> <span class="tp">ArrayList</span>();
+<span class="cm">// Swapping ArrayList → LinkedList requires changing only ONE line</span>
+<span class="cm">// All other code that uses 'list' remains untouched ✅</span></pre>
+</section>
+
+<!-- 10. Polymorphism -->
+<section>
+  <div class="sec-head"><span class="sec-num">10</span><h2>Polymorphism &amp; Dynamic Binding</h2></div>
+  <p><strong>Polymorphism</strong> means "many forms" — an object of a subclass can be treated as an object of the superclass, and the correct method is chosen at runtime.</p>
+
+  <ul>
+    <li>A superclass reference variable can point to a subclass object</li>
+    <li>When an overridden method is called, the <strong>actual class</strong> of the object determines which version runs — this is called <strong>dynamic binding</strong></li>
+  </ul>
+
+  <pre><span class="cm">// What does this print?</span>
+<span class="kw">class</span> <span class="tp">A</span> {
+  <span class="kw">void</span> <span class="fn">print</span>() { System.out.<span class="fn">println</span>(<span class="str">"This is A"</span>); }
+}
+<span class="kw">class</span> <span class="tp">B</span> <span class="kw">extends</span> <span class="tp">A</span> {
+  <span class="an">@Override</span>
+  <span class="kw">void</span> <span class="fn">print</span>() { System.out.<span class="fn">println</span>(<span class="str">"This is B"</span>); }
+}
+
+<span class="tp">A</span> a = <span class="kw">new</span> <span class="tp">B</span>();  <span class="cm">// declared as A, but actual object is B</span>
+a.<span class="fn">print</span>();</pre>
+  <div class="output">This is B</div>
+  <div class="note">Even though the variable is typed as <ic>A</ic>, the runtime sees that the actual object is a <ic>B</ic>, so it calls <ic>B</ic>'s version of <ic>print()</ic>. This is dynamic binding.</div>
+
+  <p>Polymorphism lets you write highly <strong>general code</strong>:</p>
+  <pre><span class="cm">// Works for FullTimeEmployee, PartTimeEmployee, or any future subclass</span>
+<span class="kw">for</span> (<span class="tp">Employee</span> e : employees)
+  <span class="kw">var</span> pay = e.<span class="fn">calculatePay</span>(<span class="tp">YearMonth</span>.<span class="fn">now</span>());
+
+<span class="cm">// Works for CheckingAccount, SavingsAccount, etc.</span>
+<span class="kw">double</span> <span class="fn">transfer</span>(<span class="kw">double</span> amount, <span class="tp">Account</span> other) {
+  <span class="kw">return</span> other.<span class="fn">deposit</span>(<span class="fn">withdraw</span>(amount));
+}</pre>
+</section>
+
+<!-- Summary -->
+<section class="summary-section">
+  <div class="sec-head"><span class="sec-num">∑</span><h2>Summary: Concepts at a Glance</h2></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Concept</th><th>One-liner</th><th>Key Detail</th></tr></thead>
+      <tbody>
+        <tr><td>Inheritance</td><td>Subclass reuses superclass code</td><td><ic>extends</ic> (Java), <ic>(Parent)</ic> (Python)</td></tr>
+        <tr><td>Multiple Inheritance</td><td>Inherit from 2+ parents</td><td>Python: MRO left→right; Java: interfaces only</td></tr>
+        <tr><td>Method Overriding</td><td>Subclass replaces a superclass method</td><td>Same signature; resolved at runtime</td></tr>
+        <tr><td>Method Overloading</td><td>Same name, different parameters</td><td>Same class; resolved at compile time</td></tr>
+        <tr><td>super</td><td>Access superclass members from subclass</td><td><ic>super.method()</ic> / <ic>super()</ic></td></tr>
+        <tr><td>Abstract Class</td><td>Partial blueprint — cannot instantiate</td><td>Mix of concrete + abstract methods</td></tr>
+        <tr><td>Interface</td><td>Pure contract — all abstract</td><td>A class can implement many interfaces</td></tr>
+        <tr><td>Polymorphism</td><td>Subclass object used as superclass type</td><td>Enables general, reusable code</td></tr>
+        <tr><td>Dynamic Binding</td><td>Actual method chosen at runtime</td><td>Based on the object's real class, not variable type</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  <span>CS3035 · Inheritance and Polymorphism</span>
+  <span>Reading: Textbook Ch. 19</span>
+</footer>
+
+</div>
+</body>
+</html>
