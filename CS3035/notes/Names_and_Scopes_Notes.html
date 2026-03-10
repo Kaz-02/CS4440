@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Names and Scopes — CS3035 Study Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink:      #0f0d1a;
+    --paper:    #f5f2eb;
+    --accent:   #6b21e8;
+    --accent2:  #e8213a;
+    --accent3:  #21a8e8;
+    --green:    #16a34a;
+    --orange:   #ea580c;
+    --muted:    #8a86a0;
+    --rule:     #d4cecc;
+    --code-bg:  #1a1628;
+    --code-fg:  #e2deff;
+    --note-bg:  #fff8e8;
+    --warn-bg:  #fff1f1;
+    --tag-bg:   #ede8ff;
+    --tag-fg:   #5a1ec8;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Lora', Georgia, serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.7;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: repeating-linear-gradient(
+      transparent, transparent 27px, var(--rule) 27px, var(--rule) 28px);
+    opacity: .3;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    position: relative; z-index: 1;
+    max-width: 900px; margin: 0 auto;
+    padding: 60px 40px 100px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    border-left: 6px solid var(--accent);
+    padding: 12px 0 12px 28px;
+    margin-bottom: 52px;
+    animation: slideIn .5s ease both;
+  }
+  .course-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: .15em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+  }
+  h1 { font-family: 'Syne', sans-serif; font-size: clamp(2.2rem,5vw,3.6rem); font-weight: 800; line-height: 1.05; }
+  h1 span { color: var(--accent); }
+  .subtitle { font-style: italic; color: var(--muted); font-size: .95rem; margin-top: 8px; }
+
+  /* ── SECTIONS ── */
+  section { margin-bottom: 52px; animation: fadeUp .45s ease both; }
+  section:nth-child(2)  { animation-delay:.05s }
+  section:nth-child(3)  { animation-delay:.10s }
+  section:nth-child(4)  { animation-delay:.15s }
+  section:nth-child(5)  { animation-delay:.20s }
+  section:nth-child(6)  { animation-delay:.25s }
+  section:nth-child(7)  { animation-delay:.30s }
+  section:nth-child(8)  { animation-delay:.35s }
+  section:nth-child(9)  { animation-delay:.40s }
+  section:nth-child(10) { animation-delay:.45s }
+  section:nth-child(11) { animation-delay:.50s }
+
+  .sec-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--ink); }
+  .sec-num { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: .12em; color: var(--accent); text-transform: uppercase; }
+  h2 { font-family: 'Syne', sans-serif; font-size: 1.35rem; font-weight: 700; }
+
+  p { margin-bottom: .8em; font-size: .97rem; }
+
+  ul { list-style: none; margin: 10px 0 14px; }
+  ul li { position: relative; padding-left: 22px; margin-bottom: 6px; font-size: .95rem; }
+  ul li::before { content: '◆'; position: absolute; left: 0; color: var(--accent); font-size: .6rem; top: 6px; }
+
+  ic { font-family: 'JetBrains Mono', monospace; background: #ede8ff; color: #5a1ec8; padding: 1px 6px; border-radius: 3px; font-size: .88em; }
+
+  /* ── CODE ── */
+  .lang-label { font-family: 'JetBrains Mono', monospace; font-size: .7rem; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+  pre {
+    background: var(--code-bg); color: var(--code-fg);
+    font-family: 'JetBrains Mono', monospace; font-size: .82rem; line-height: 1.7;
+    padding: 20px 24px; border-radius: 4px; margin: 14px 0;
+    overflow-x: auto; border-left: 3px solid var(--accent);
+  }
+  .kw  { color: #c792ea; }
+  .fn  { color: #82aaff; }
+  .str { color: #c3e88d; }
+  .cm  { color: #546e7a; font-style: italic; }
+  .tp  { color: #ffcb6b; }
+  .nb  { color: #f78c6c; }
+  .err { color: #ff5370; font-weight: 700; }
+  .hl  { background: #2d2060; border-radius: 2px; padding: 1px 2px; }
+  .ans { color: #c3e88d; }
+
+  /* ── CALLOUTS ── */
+  .note { background: var(--note-bg); border-left: 4px solid #f0c040; padding: 12px 16px; font-size: .88rem; margin: 14px 0; border-radius: 0 4px 4px 0; }
+  .note::before { content: '💡 '; }
+  .warn { background: var(--warn-bg); border-left: 4px solid var(--accent2); padding: 12px 16px; font-size: .88rem; margin: 14px 0; border-radius: 0 4px 4px 0; }
+  .warn::before { content: '⚠️ '; }
+  .qa { border: 1.5px solid var(--rule); border-radius: 4px; overflow: hidden; margin: 14px 0; }
+  .qa-q { background: var(--ink); color: var(--paper); padding: 10px 16px; font-family: 'Syne', sans-serif; font-size: .88rem; font-weight: 700; }
+  .qa-a { background: #e8f4ff; padding: 12px 16px; font-size: .88rem; }
+
+  /* ── SIDE-BY-SIDE CODE ── */
+  .code-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0; }
+  .code-pair > div { min-width: 0; }
+
+  /* ── SCOPE CONCEPT CARDS ── */
+  .concept-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0; }
+  .concept-card { padding: 18px 16px; border-radius: 4px; border: 1.5px solid var(--rule); }
+  .concept-card .cc-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: .9rem; margin-bottom: 8px; }
+  .concept-card p { font-size: .86rem; margin-bottom: 4px; }
+  .cc-static  { border-color: var(--accent); background: #f5f0ff; }
+  .cc-static  .cc-title { color: var(--accent); }
+  .cc-dynamic { border-color: var(--accent3); background: #f0f9ff; }
+  .cc-dynamic .cc-title { color: #0369a1; }
+
+  /* ── BLOCK SYNTAX TABLE ── */
+  .table-wrap { overflow-x: auto; margin: 14px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  thead tr { background: var(--ink); color: var(--paper); }
+  thead th { font-family: 'Syne', sans-serif; font-weight: 600; padding: 10px 14px; text-align: left; letter-spacing: .04em; }
+  tbody tr:nth-child(odd)  { background: #fffffe; }
+  tbody tr:nth-child(even) { background: #eeeae0; }
+  tbody td { padding: 9px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  tbody td:first-child { font-family: 'Syne', sans-serif; font-weight: 600; }
+
+  /* ── SCOPE NESTING VISUAL ── */
+  .scope-nest {
+    position: relative; margin: 16px 0; font-family: 'JetBrains Mono', monospace; font-size: .82rem;
+  }
+  .sn-global {
+    background: #f5f0ff; border: 2px solid var(--accent); border-radius: 6px;
+    padding: 14px 16px;
+  }
+  .sn-label {
+    font-family: 'Syne', sans-serif; font-size: .72rem; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .sn-global > .sn-label { color: var(--accent); }
+  .sn-fn {
+    background: #e8f4ff; border: 2px solid var(--accent3); border-radius: 4px;
+    padding: 12px 14px; margin: 8px 0;
+  }
+  .sn-fn > .sn-label { color: #0369a1; }
+  .sn-inline {
+    background: #f0fdf4; border: 2px solid var(--green); border-radius: 3px;
+    padding: 10px 12px; margin: 8px 0;
+  }
+  .sn-inline > .sn-label { color: var(--green); }
+  .sn-var { color: #ffcb6b; }
+  .sn-err { color: #ff5370; }
+
+  /* ── CALL STACK VISUAL ── */
+  .call-stack {
+    display: flex; flex-direction: column-reverse;
+    gap: 0; margin: 16px 0;
+    font-family: 'JetBrains Mono', monospace; font-size: .84rem;
+    max-width: 340px;
+  }
+  .cs-label-row {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 6px;
+    font-family: 'Syne', sans-serif; font-size: .72rem; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+  }
+  .cs-frame {
+    border: 2px solid var(--rule); border-bottom: none;
+    padding: 12px 16px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .cs-frame:first-child { border-bottom: 2px solid var(--rule); border-radius: 0 0 4px 4px; }
+  .cs-frame:last-child  { border-radius: 4px 4px 0 0; }
+  .cs-frame.global  { background: #f5f0ff; border-color: var(--accent); }
+  .cs-frame.fn-call { background: #f0f9ff; border-color: var(--accent3); }
+  .cs-frame.fn-top  { background: #f0fdf4; border-color: var(--green); }
+  .cs-fn-name { font-weight: 700; }
+  .cs-var     { color: var(--muted); font-size: .78rem; }
+  .cs-top-tag {
+    font-family: 'Syne', sans-serif; font-size: .66rem; font-weight: 700;
+    background: var(--green); color: #fff; padding: 2px 7px; border-radius: 3px;
+    letter-spacing: .06em;
+  }
+
+  /* ── STATIC SCOPE LAYOUT ── */
+  .lex-blocks {
+    display: flex; flex-direction: column; gap: 0;
+    border: 2px dashed var(--muted); border-radius: 6px;
+    padding: 12px; margin: 14px 0;
+    font-family: 'JetBrains Mono', monospace; font-size: .82rem; background: #f9f7ff;
+  }
+  .lb-row { display: flex; align-items: center; gap: 12px; padding: 6px 0; }
+  .lb-scope-tag {
+    font-family: 'Syne', sans-serif; font-size: .68rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .08em;
+    padding: 2px 8px; border-radius: 3px;
+    min-width: 80px; text-align: center;
+  }
+  .lbt-global   { background: #ede8ff; color: #5a1ec8; }
+  .lbt-showx    { background: #dbeafe; color: #1d4ed8; }
+  .lbt-parent   { background: #fef3c7; color: #92400e; }
+  .lb-code { flex: 1; }
+  .lb-arrow { color: var(--accent); font-size: .9rem; }
+
+  /* ── FRAME ANATOMY ── */
+  .frame-anatomy {
+    display: inline-flex; flex-direction: column; gap: 0;
+    border: 2px solid var(--accent3); border-radius: 4px;
+    overflow: hidden; margin: 14px 0;
+    font-family: 'JetBrains Mono', monospace; font-size: .82rem;
+  }
+  .fa-row {
+    display: flex; align-items: stretch;
+    border-bottom: 1px solid #d0e8f8;
+  }
+  .fa-row:last-child { border-bottom: none; }
+  .fa-field {
+    width: 140px; flex-shrink: 0;
+    background: #dbeafe; color: #1d4ed8;
+    padding: 10px 14px; font-weight: 700; font-size: .78rem;
+    letter-spacing: .04em; border-right: 1px solid #a0c4e8;
+    display: flex; align-items: center;
+  }
+  .fa-val {
+    flex: 1; background: #f0f9ff;
+    padding: 10px 14px; color: #334155;
+    display: flex; align-items: center;
+  }
+
+  /* ── OVERLOAD / SHADOW COMPARISON ── */
+  .os-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0; }
+  .os-box { padding: 16px 16px; border-radius: 4px; border: 1.5px solid var(--rule); }
+  .os-box.over { border-color: var(--orange); background: #fff7ed; }
+  .os-box.shad { border-color: var(--accent2); background: #fff1f1; }
+  .os-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: .88rem; margin-bottom: 8px; text-transform: uppercase; letter-spacing: .05em; }
+  .os-box.over .os-title { color: var(--orange); }
+  .os-box.shad .os-title { color: var(--accent2); }
+  .os-box p { font-size: .86rem; margin-bottom: 4px; }
+
+  /* ── OUTPUT BOX ── */
+  .output {
+    background: #0d1117; color: #c3e88d;
+    font-family: 'JetBrains Mono', monospace; font-size: .85rem;
+    padding: 14px 20px; border-radius: 4px; margin: 8px 0 14px;
+  }
+  .output::before {
+    content: '▶ Output';
+    display: block; color: #546e7a; font-size: .75rem;
+    letter-spacing: .1em; text-transform: uppercase; margin-bottom: 6px;
+  }
+
+  /* ── SUMMARY ── */
+  .summary-section { background: var(--ink); padding: 36px 40px; border-radius: 6px; }
+  .summary-section .sec-head { border-color: var(--accent); }
+  .summary-section h2,
+  .summary-section .sec-num  { color: var(--paper); }
+  .summary-section .sec-num  { color: var(--accent); }
+  .summary-section table { font-size: .86rem; }
+  .summary-section thead tr { background: var(--accent); }
+  .summary-section tbody tr:nth-child(odd)  { background: #1f1b30; color: #ddd8f8; }
+  .summary-section tbody tr:nth-child(even) { background: #272038; color: #ddd8f8; }
+  .summary-section tbody td { border-color: #3a3350; }
+  .summary-section tbody td:first-child { color: #c3b8f8; }
+
+  /* ── FOOTER ── */
+  footer { margin-top: 60px; padding-top: 20px; border-top: 1.5px solid var(--rule); font-family: 'JetBrains Mono', monospace; font-size: .8rem; color: var(--muted); display: flex; justify-content: space-between; }
+
+  @keyframes slideIn { from{opacity:0;transform:translateX(-20px)} to{opacity:1;transform:translateX(0)} }
+  @keyframes fadeUp  { from{opacity:0;transform:translateY(18px)}  to{opacity:1;transform:translateY(0)} }
+
+  @media(max-width:640px){
+    .wrap{padding:36px 20px 60px}
+    .code-pair,.concept-row,.os-grid{grid-template-columns:1fr}
+    .summary-section{padding:24px 20px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="course-tag">CS3035 Programming Paradigms &nbsp;·&nbsp; Cal State LA</p>
+  <h1>Names and <span>Scopes</span></h1>
+  <p class="subtitle">Study notes compiled from lecture slides</p>
+</header>
+
+<!-- 1. Names & Binding -->
+<section>
+  <div class="sec-head"><span class="sec-num">01</span><h2>Names &amp; Binding</h2></div>
+  <p>A <strong>name</strong> is any identifier used to refer to an entity in a program — a variable, function, class, constant, etc.</p>
+  <p><strong>Binding</strong> is the act of associating a name with a specific entity. The same name can be bound to different entities in different contexts.</p>
+
+  <pre><span class="kw">from</span> foo <span class="kw">import</span> *   <span class="cm"># imports add() function and PI constant</span>
+
+<span class="fn">print</span>(<span class="fn">add</span>(2, 3))     <span class="cm"># 'add' is bound to the imported function</span>
+<span class="fn">print</span>(PI)
+
+add = 100              <span class="cm"># 'add' is NOW rebound to the integer 100 !</span>
+<span class="fn">print</span>(<span class="fn">add</span>(2, 3))     <span class="err"># ❌ TypeError — add is no longer a function</span></pre>
+
+  <div class="warn">Reusing a name to refer to different entities <strong>in the same scope</strong> is generally a bad programming practice. It causes confusion and hard-to-find bugs.</div>
+</section>
+
+<!-- 2. Scope -->
+<section>
+  <div class="sec-head"><span class="sec-num">02</span><h2>Scope</h2></div>
+  <p>A <strong>scope</strong> is the region of a program where a particular name binding is valid. Restricting scope prevents name conflicts between different parts of a program.</p>
+
+  <div class="code-pair">
+    <div>
+      <p class="lang-label">C — two separate scopes for x</p>
+      <pre><span class="kw">void</span> <span class="fn">foo</span>() {
+    <span class="kw">int</span> <span class="hl">x</span>;  <span class="cm">// x is int, in foo's scope</span>
+}
+
+<span class="kw">void</span> <span class="fn">bar</span>() {
+    <span class="kw">double</span> <span class="hl">x</span>;  <span class="cm">// x is double, in bar's scope</span>
+}</pre>
+    </div>
+    <div>
+      <p class="lang-label">Key insight</p>
+      <div style="padding:14px 0;font-size:.9rem;">
+        <p>Both functions define a variable named <ic>x</ic>, but they live in <strong>separate scopes</strong> — there is no conflict.</p>
+        <p>Without scoping, every name in a program would need to be globally unique. That would be unworkable.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. Blocks -->
+<section>
+  <div class="sec-head"><span class="sec-num">03</span><h2>Blocks</h2></div>
+  <p>A <strong>block</strong> is a group of statements treated as a single unit. Blocks usually introduce a new scope. There are two types:</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Block Type</th><th>Description</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td>Function block</td><td>The body of a function or method</td><td><ic>void foo() { … }</ic></td></tr>
+        <tr><td>Inline block</td><td>A block inside a function — loop body, if body, etc.</td><td><ic>for (…) { … }</ic></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-wrap" style="margin-top:16px;">
+    <table>
+      <thead><tr><th>Language</th><th>Block Syntax</th></tr></thead>
+      <tbody>
+        <tr><td>C / Java / JavaScript</td><td><ic>{ … }</ic> — curly braces</td></tr>
+        <tr><td>Python</td><td>Indentation level</td></tr>
+        <tr><td>Ada / Pascal</td><td><ic>begin … end</ic> keywords</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="lang-label">Java — nested blocks create nested scopes</p>
+  <pre><span class="kw">public void</span> <span class="fn">checkNumbers</span>(<span class="kw">int</span>[] numbers) {         <span class="cm">// function scope</span>
+    <span class="kw">for</span> (<span class="kw">int</span> i = 0; i &lt; numbers.length; i++) {    <span class="cm">// for-block scope</span>
+        <span class="kw">int</span> currentValue = numbers[i];
+        <span class="kw">if</span> (currentValue &gt; 100) {                   <span class="cm">// if-block scope</span>
+            <span class="tp">String</span> message = <span class="str">"Large number!"</span>;
+            <span class="tp">System</span>.out.<span class="fn">println</span>(message);
+        }
+        <span class="tp">System</span>.out.<span class="fn">println</span>(message);  <span class="err">// ❌ Error — message is out of scope</span>
+    }
+    <span class="tp">System</span>.out.<span class="fn">println</span>(currentValue); <span class="err">// ❌ Error — currentValue is out of scope</span>
+}</pre>
+
+  <div class="scope-nest">
+    <div class="sn-global">
+      <div class="sn-label">Function scope — checkNumbers()</div>
+      <div class="sn-fn">
+        <div class="sn-label">for-block scope</div>
+        <p style="font-size:.82rem;margin-bottom:6px;"><span class="sn-var">int currentValue</span> — visible here and in nested blocks</p>
+        <div class="sn-inline">
+          <div class="sn-label">if-block scope</div>
+          <p style="font-size:.82rem;margin:0;"><span class="sn-var">String message</span> — only visible inside this if-block</p>
+        </div>
+        <p style="font-size:.82rem;margin-top:8px;"><span class="sn-err">message here ❌</span> — if-block already ended</p>
+      </div>
+      <p style="font-size:.82rem;margin-top:6px;"><span class="sn-err">currentValue here ❌</span> — for-block already ended</p>
+    </div>
+  </div>
+
+  <div class="note">Python's inline blocks (like <ic>for</ic> or <ic>if</ic>) do <strong>not</strong> create new scopes — variables defined inside them are visible in the enclosing function. This is a key difference from C/Java.</div>
+</section>
+
+<!-- 4. Point of Declaration -->
+<section>
+  <div class="sec-head"><span class="sec-num">04</span><h2>Point of Declaration / Definition</h2></div>
+  <p>When does a variable's scope actually start? It depends on the language:</p>
+
+  <div class="code-pair">
+    <div>
+      <p class="lang-label">C-style — scope starts at declaration</p>
+      <pre><span class="kw">int</span> <span class="fn">foo</span>() {
+    <span class="fn">print</span>(x);    <span class="err">// ❌ x not yet declared</span>
+    <span class="kw">int</span> x = 3;
+}</pre>
+      <p style="font-size:.85rem;margin-top:6px;color:var(--muted);">x's scope starts at the <ic>int x = 3;</ic> line.</p>
+    </div>
+    <div>
+      <p class="lang-label">Python — scope starts at function start</p>
+      <pre><span class="kw">def</span> <span class="fn">foo</span>():
+    <span class="fn">print</span>(x)  <span class="err"># ❌ UnboundLocalError</span>
+    x = 3</pre>
+      <p style="font-size:.85rem;margin-top:6px;color:var(--muted);">Python sees that <ic>x</ic> is assigned in <ic>foo</ic>, so it treats <ic>x</ic> as local for the whole function — but it's unbound at the <ic>print</ic> line.</p>
+    </div>
+  </div>
+
+  <div class="qa">
+    <div class="qa-q">❓ Why does the Python version also error, if scope starts at function start?</div>
+    <div class="qa-a">Because Python <strong>hoists the name</strong> (marks <ic>x</ic> as local to <ic>foo</ic>) but does not hoist the <em>value</em>. So <ic>x</ic> exists as a local name, but accessing it before the assignment gives an <ic>UnboundLocalError</ic>.</div>
+  </div>
+
+  <p>The same issue arises with mutually recursive functions in C — since <ic>foo</ic> calls <ic>bar</ic> which isn't declared yet at that point. C requires a <strong>forward declaration</strong>; Python doesn't:</p>
+
+  <div class="code-pair">
+    <div>
+      <p class="lang-label">C — needs forward declaration</p>
+      <pre><span class="kw">int</span> <span class="fn">foo</span>(<span class="kw">int</span> x) {
+    <span class="kw">int</span> <span class="fn">bar</span>(<span class="kw">int</span>);  <span class="cm">// forward decl ✅</span>
+    <span class="kw">return</span> <span class="fn">bar</span>(x + 1);
+}
+<span class="kw">int</span> <span class="fn">bar</span>(<span class="kw">int</span> x) {
+    <span class="kw">return</span> <span class="fn">foo</span>(x - 1);
+}</pre>
+    </div>
+    <div>
+      <p class="lang-label">Python — no issue (functions resolved at call time)</p>
+      <pre><span class="kw">def</span> <span class="fn">foo</span>(x):
+    <span class="kw">return</span> <span class="fn">bar</span>(x + 1)  <span class="cm"># ✅ ok</span>
+
+<span class="kw">def</span> <span class="fn">bar</span>(x):
+    <span class="kw">return</span> <span class="fn">foo</span>(x - 1)</pre>
+    </div>
+  </div>
+</section>
+
+<!-- 5. Static vs Dynamic Scope -->
+<section>
+  <div class="sec-head"><span class="sec-num">05</span><h2>Static Scope vs. Dynamic Scope</h2></div>
+  <p>Consider this code — what does it print?</p>
+
+  <pre>x = 10
+<span class="kw">function</span> <span class="fn">showX</span>():
+    <span class="fn">print</span> x
+<span class="kw">function</span> <span class="fn">parent</span>():
+    x = 20
+    <span class="fn">showX</span>()
+<span class="fn">parent</span>()</pre>
+
+  <div class="concept-row">
+    <div class="concept-card cc-static">
+      <div class="cc-title">🗂 Static (Lexical) Scope</div>
+      <p>Scope determined by <strong>physical location in source code</strong>.</p>
+      <p>Determined at <strong>compile time</strong>.</p>
+      <p><ic>showX()</ic> looks up <ic>x</ic> in the scope where it was <em>written</em> — which is the global scope → finds <ic>x = 10</ic>.</p>
+      <p style="margin-top:8px;font-weight:bold;">Output: <ic>10</ic></p>
+      <p style="font-size:.8rem;color:var(--muted);margin-top:6px;">Used by: Python, Java, C, JavaScript, most modern languages</p>
+    </div>
+    <div class="concept-card cc-dynamic">
+      <div class="cc-title">📞 Dynamic Scope</div>
+      <p>Scope determined by <strong>execution call stack</strong> at runtime.</p>
+      <p>Determined at <strong>runtime</strong>.</p>
+      <p><ic>showX()</ic> looks up <ic>x</ic> in the <em>calling</em> frame first → finds <ic>x = 20</ic> in <ic>parent()</ic>.</p>
+      <p style="margin-top:8px;font-weight:bold;">Output: <ic>20</ic></p>
+      <p style="font-size:.8rem;color:var(--muted);margin-top:6px;">Used by: Emacs Lisp, some shells (Bash), early Lisps</p>
+    </div>
+  </div>
+
+  <!-- Static scope lexical diagram -->
+  <p class="lang-label" style="margin-top:16px;">Static scope — name lookup follows source code structure</p>
+  <div class="lex-blocks">
+    <div class="lb-row">
+      <span class="lb-scope-tag lbt-global">Global</span>
+      <span class="lb-code"><ic>x = 10</ic></span>
+    </div>
+    <div class="lb-row">
+      <span class="lb-scope-tag lbt-showx">showX()</span>
+      <span class="lb-code"><ic>print x</ic> <span style="color:#82aaff;font-size:.8rem;">← looks up x in its lexical parent → global → finds 10</span></span>
+    </div>
+    <div class="lb-row">
+      <span class="lb-scope-tag lbt-parent">parent()</span>
+      <span class="lb-code"><ic>x = 20</ic> &nbsp; <ic>showX()</ic> <span style="color:#82aaff;font-size:.8rem;">← x=20 is local to parent, not visible to showX</span></span>
+    </div>
+  </div>
+</section>
+
+<!-- 6. Frames & Call Stack -->
+<section>
+  <div class="sec-head"><span class="sec-num">06</span><h2>Frames &amp; the Call Stack</h2></div>
+  <p>A <strong>frame</strong> (a.k.a. stack frame or activation record) is a data structure pushed onto the call stack each time a function is called. It holds everything that function needs to execute.</p>
+
+  <div class="frame-anatomy">
+    <div class="fa-row"><div class="fa-field">Parameters</div><div class="fa-val">arguments passed to the function</div></div>
+    <div class="fa-row"><div class="fa-field">Local Variables</div><div class="fa-val">variables declared inside the function</div></div>
+    <div class="fa-row"><div class="fa-field">Return Address</div><div class="fa-val">where to resume execution after return</div></div>
+    <div class="fa-row"><div class="fa-field">Saved Registers</div><div class="fa-val">CPU state to restore on return</div></div>
+  </div>
+
+  <p>During the execution of <ic>parent()</ic> which calls <ic>showX()</ic>, the call stack looks like:</p>
+
+  <div class="call-stack">
+    <div class="cs-label-row"><span>Call Stack</span><span style="font-weight:400;letter-spacing:0;">(grows upward)</span></div>
+    <div class="cs-frame global">
+      <span class="cs-fn-name">global</span>
+      <span class="cs-var">x = 10</span>
+    </div>
+    <div class="cs-frame fn-call">
+      <span class="cs-fn-name">parent()</span>
+      <span class="cs-var">x = 20</span>
+    </div>
+    <div class="cs-frame fn-top">
+      <span class="cs-fn-name">showX()</span>
+      <span class="cs-var">(no x here)</span>
+      <span class="cs-top-tag">TOP</span>
+    </div>
+  </div>
+
+  <p style="font-size:.9rem;">Under <strong>dynamic scope</strong>, <ic>showX()</ic> searches up the call stack frames and finds <ic>x = 20</ic> in <ic>parent()</ic>. Under <strong>static scope</strong>, it ignores the stack and follows the lexical structure instead.</p>
+  <div class="note">Frames are destroyed (popped off the stack) when the function returns — this is exactly why local variables cease to exist after a function call ends (automatic storage).</div>
+</section>
+
+<!-- 7. Nested Functions & Closures -->
+<section>
+  <div class="sec-head"><span class="sec-num">07</span><h2>Nested Functions &amp; Closures</h2></div>
+  <p>Python (and many languages) allows defining a function <em>inside</em> another function. The inner function can access variables from its enclosing scope — this is called a <strong>closure</strong>.</p>
+
+  <pre>x = 0
+
+<span class="kw">def</span> <span class="fn">foo</span>():
+    x = 2
+    <span class="kw">def</span> <span class="fn">baz</span>():           <span class="cm"># inner function — defined inside foo</span>
+        <span class="fn">print</span>(x)         <span class="cm"># captures x from foo's scope</span>
+    <span class="kw">return</span> baz            <span class="cm"># returns the function object itself</span>
+
+<span class="kw">def</span> <span class="fn">bar</span>():
+    x = 1
+    <span class="fn">foo</span>()()              <span class="cm"># foo() returns baz; () calls it</span>
+
+<span class="fn">bar</span>()</pre>
+
+  <div class="output">2</div>
+
+  <div class="qa">
+    <div class="qa-q">❓ Why does it print 2 and not 1 or 0?</div>
+    <div class="qa-a">Static (lexical) scope. <ic>baz</ic> was <em>defined</em> inside <ic>foo</ic>, so it captures <ic>foo</ic>'s <ic>x = 2</ic>. Even though <ic>bar</ic> calls it (and <ic>bar</ic> has its own <ic>x = 1</ic>), that doesn't matter — scope follows source code structure, not the call chain. The returned <ic>baz</ic> function is a <strong>closure</strong> that "closes over" <ic>foo</ic>'s <ic>x</ic>.</div>
+  </div>
+</section>
+
+<!-- 8. Overloading & Shadowing -->
+<section>
+  <div class="sec-head"><span class="sec-num">08</span><h2>Overloading &amp; Shadowing</h2></div>
+
+  <div class="os-grid">
+    <div class="os-box over">
+      <div class="os-title">Overloading</div>
+      <p>Same name refers to <strong>multiple entities</strong> in the same scope.</p>
+      <p>Extra info (e.g. argument types) is needed to tell them apart.</p>
+      <p style="font-size:.82rem;margin-top:8px;color:var(--muted);">Example: two methods named <ic>display()</ic> — one takes no args, one takes a <ic>String</ic>.</p>
+    </div>
+    <div class="os-box shad">
+      <div class="os-title">Shadowing</div>
+      <p>An inner variable has the <strong>same name as an outer variable</strong>.</p>
+      <p>The inner variable <em>hides</em> the outer one within its scope.</p>
+      <p style="font-size:.82rem;margin-top:8px;color:var(--muted);">Example: parameter <ic>name</ic> shadows the field <ic>this.name</ic>.</p>
+    </div>
+  </div>
+
+  <p class="lang-label">Java — overloading + shadowing in the same class</p>
+  <pre><span class="kw">public class</span> <span class="tp">Foo</span> {
+    <span class="tp">String</span> name = <span class="str">"John"</span>;          <span class="cm">// class field</span>
+
+    <span class="kw">void</span> <span class="fn">display</span>() {               <span class="cm">// overload 1 — no parameter</span>
+        <span class="tp">System</span>.out.<span class="fn">println</span>(<span class="str">"Hello "</span> + name);  <span class="cm">// uses field 'name'</span>
+    }
+
+    <span class="kw">void</span> <span class="fn">display</span>(<span class="tp">String</span> <span class="hl">name</span>) {    <span class="cm">// overload 2 — String parameter</span>
+        <span class="cm">// parameter 'name' SHADOWS the field 'name'</span>
+        <span class="tp">System</span>.out.<span class="fn">println</span>(<span class="str">"Hello "</span> + <span class="hl">name</span>);  <span class="cm">// uses parameter, not field</span>
+        <span class="cm">// use 'this.name' to access the field explicitly</span>
+    }
+}</pre>
+  <div class="note">To access a shadowed outer variable in Java, use <ic>this.name</ic>. In Python, use <ic>global x</ic> or <ic>nonlocal x</ic> to write to an outer variable instead of creating a new local one.</div>
+</section>
+
+<!-- 9. Python global / nonlocal -->
+<section>
+  <div class="sec-head"><span class="sec-num">09</span><h2>Python: <ic>global</ic> &amp; <ic>nonlocal</ic></h2></div>
+  <p>In Python, <strong>assignment always creates a new local variable</strong> in the current scope. To modify a variable in an outer scope, you must declare it explicitly.</p>
+
+  <div class="code-pair">
+    <div>
+      <p class="lang-label">Without global/nonlocal</p>
+      <pre>x = 10
+
+<span class="kw">def</span> <span class="fn">foo</span>():
+    x = 20           <span class="cm"># new local x</span>
+    <span class="kw">def</span> <span class="fn">bar</span>():
+        x = 30       <span class="cm"># new local x</span>
+    <span class="fn">bar</span>()
+    <span class="fn">print</span>(x)         <span class="cm"># prints 20</span>
+
+<span class="fn">foo</span>()
+<span class="fn">print</span>(x)            <span class="cm"># prints 10</span></pre>
+      <div class="output">20
+10</div>
+    </div>
+    <div>
+      <p class="lang-label">With global / nonlocal</p>
+      <pre>x = 10
+
+<span class="kw">def</span> <span class="fn">foo</span>():
+    x = 20
+    <span class="kw">def</span> <span class="fn">bar</span>():
+        <span class="kw">nonlocal</span> x   <span class="cm"># modify foo's x</span>
+        x = 30
+    <span class="fn">bar</span>()
+    <span class="fn">print</span>(x)         <span class="cm"># prints 30</span>
+
+<span class="fn">foo</span>()
+<span class="fn">print</span>(x)            <span class="cm"># prints 10</span></pre>
+      <div class="output">30
+10</div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Keyword</th><th>Effect</th><th>Use case</th></tr></thead>
+      <tbody>
+        <tr><td><ic>global x</ic></td><td>Refers to the module-level (global) <ic>x</ic></td><td>Modifying a global variable from inside any function</td></tr>
+        <tr><td><ic>nonlocal x</ic></td><td>Refers to the nearest enclosing (non-global) <ic>x</ic></td><td>Modifying a variable in an outer (but not global) function</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Summary -->
+<section class="summary-section">
+  <div class="sec-head"><span class="sec-num">∑</span><h2>Summary: Names &amp; Scopes at a Glance</h2></div>
+  <table>
+    <thead><tr><th>Concept</th><th>Definition</th><th>Key Detail</th></tr></thead>
+    <tbody>
+      <tr><td>Name</td><td>Identifier that refers to an entity</td><td>Variables, functions, classes, constants</td></tr>
+      <tr><td>Binding</td><td>Associating a name to an entity</td><td>Can change; same name can bind to different things</td></tr>
+      <tr><td>Scope</td><td>Region where a name binding is valid</td><td>Restrict scope to avoid conflicts</td></tr>
+      <tr><td>Block</td><td>Group of statements forming a single unit</td><td><ic>{}</ic> / indentation / <ic>begin…end</ic>; introduces new scope</td></tr>
+      <tr><td>Static Scope</td><td>Scope determined by source code structure</td><td>Resolved at compile time; used by most modern languages</td></tr>
+      <tr><td>Dynamic Scope</td><td>Scope determined by call stack at runtime</td><td>Follows execution path; can be surprising / hard to reason about</td></tr>
+      <tr><td>Frame</td><td>Data structure for one function execution</td><td>Holds params, locals, return address; pushed/popped on call stack</td></tr>
+      <tr><td>Closure</td><td>Inner function capturing variables from enclosing scope</td><td>Captures lexical environment, not call-time environment</td></tr>
+      <tr><td>Overloading</td><td>Same name → multiple entities in same scope</td><td>Disambiguated by argument types</td></tr>
+      <tr><td>Shadowing</td><td>Inner variable hides outer variable of same name</td><td>Use <ic>this.</ic> (Java) or <ic>global</ic>/<ic>nonlocal</ic> (Python) to access outer</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<footer>
+  <span>CS3035 · Names and Scopes</span>
+  <span>Reading: Textbook Ch. 4</span>
+</footer>
+
+</div>
+</body>
+</html>
