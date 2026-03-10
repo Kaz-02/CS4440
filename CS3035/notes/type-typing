@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Type & Typing — CS3035 Study Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f0d1a;
+    --paper: #f5f2eb;
+    --accent: #6b21e8;
+    --accent2: #e8213a;
+    --accent3: #21a8e8;
+    --muted: #8a86a0;
+    --rule: #d4cecc;
+    --code-bg: #1a1628;
+    --code-fg: #e2deff;
+    --note-bg: #fff8e8;
+    --tag-bg: #ede8ff;
+    --tag-fg: #5a1ec8;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Lora', Georgia, serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.7;
+    padding: 0;
+  }
+
+  /* Decorative ruled lines background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+      transparent, transparent 27px, var(--rule) 27px, var(--rule) 28px
+    );
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 60px 40px 100px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    border-left: 6px solid var(--accent);
+    padding: 12px 0 12px 28px;
+    margin-bottom: 52px;
+    animation: slideIn .5s ease both;
+  }
+  .course-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.4rem, 5vw, 3.8rem);
+    font-weight: 800;
+    line-height: 1.05;
+    color: var(--ink);
+  }
+  h1 span { color: var(--accent); }
+  .subtitle {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    color: var(--muted);
+    font-size: .95rem;
+    margin-top: 8px;
+  }
+
+  /* ── SECTIONS ── */
+  section {
+    margin-bottom: 52px;
+    animation: fadeUp .45s ease both;
+  }
+  section:nth-child(2)  { animation-delay: .05s; }
+  section:nth-child(3)  { animation-delay: .10s; }
+  section:nth-child(4)  { animation-delay: .15s; }
+  section:nth-child(5)  { animation-delay: .20s; }
+  section:nth-child(6)  { animation-delay: .25s; }
+  section:nth-child(7)  { animation-delay: .30s; }
+  section:nth-child(8)  { animation-delay: .35s; }
+  section:nth-child(9)  { animation-delay: .40s; }
+  section:nth-child(10) { animation-delay: .45s; }
+
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--ink);
+  }
+  .sec-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  /* ── BODY TEXT ── */
+  p { margin-bottom: .8em; font-size: .97rem; }
+
+  ul {
+    list-style: none;
+    margin: 10px 0 14px;
+  }
+  ul li {
+    position: relative;
+    padding-left: 22px;
+    margin-bottom: 6px;
+    font-size: .95rem;
+  }
+  ul li::before {
+    content: '◆';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-size: .6rem;
+    top: 6px;
+  }
+
+  strong { font-weight: 600; }
+  em { color: var(--accent); font-style: italic; }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x: auto; margin: 14px 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .88rem;
+  }
+  thead tr {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  thead th {
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    padding: 10px 14px;
+    text-align: left;
+    letter-spacing: .04em;
+  }
+  tbody tr:nth-child(odd)  { background: #fffffe; }
+  tbody tr:nth-child(even) { background: #eeeae0; }
+  tbody td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  tbody td:first-child { font-family: 'Syne', sans-serif; font-weight: 600; }
+
+  /* ── CODE ── */
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .82rem;
+    line-height: 1.65;
+    padding: 20px 24px;
+    border-radius: 4px;
+    margin: 14px 0;
+    overflow-x: auto;
+    border-left: 3px solid var(--accent);
+  }
+  .kw  { color: #c792ea; }
+  .fn  { color: #82aaff; }
+  .str { color: #c3e88d; }
+  .cm  { color: #546e7a; font-style: italic; }
+  .tp  { color: #ffcb6b; }
+  .nb  { color: #f78c6c; }
+
+  /* ── NOTE BOX ── */
+  .note {
+    background: var(--note-bg);
+    border-left: 4px solid #f0c040;
+    padding: 12px 16px;
+    font-size: .88rem;
+    margin: 14px 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .note::before { content: '💡 '; }
+
+  /* ── QUOTE ── */
+  blockquote {
+    border-left: 4px solid var(--accent);
+    padding: 8px 20px;
+    margin: 14px 0;
+    font-style: italic;
+    color: var(--accent);
+    font-size: 1.05rem;
+  }
+
+  /* ── TAG CHIPS ── */
+  .tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+  .tag {
+    background: var(--tag-bg);
+    color: var(--tag-fg);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .75rem;
+    padding: 3px 10px;
+    border-radius: 2px;
+    font-weight: 500;
+  }
+
+  /* ── COMPARISON GRID ── */
+  .cmp {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 14px 0;
+  }
+  .cmp-box {
+    padding: 16px 18px;
+    border: 1.5px solid var(--rule);
+    border-radius: 4px;
+  }
+  .cmp-box.strong { border-color: var(--accent3); }
+  .cmp-box.weak   { border-color: var(--accent2); }
+  .cmp-label {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: .85rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .cmp-box.strong .cmp-label { color: var(--accent3); }
+  .cmp-box.weak   .cmp-label { color: var(--accent2); }
+
+  /* ── SUMMARY SECTION ── */
+  .summary-section { background: var(--ink); padding: 36px 40px; border-radius: 6px; }
+  .summary-section .sec-head { border-color: var(--accent); }
+  .summary-section h2,
+  .summary-section .sec-num { color: var(--paper); }
+  .summary-section .sec-num { color: var(--accent); }
+  .summary-section table { font-size: .86rem; }
+  .summary-section thead tr { background: var(--accent); }
+  .summary-section tbody tr:nth-child(odd)  { background: #1f1b30; color: #ddd8f8; }
+  .summary-section tbody tr:nth-child(even) { background: #272038; color: #ddd8f8; }
+  .summary-section tbody td { border-color: #3a3350; }
+  .summary-section tbody td:first-child { color: #c3b8f8; }
+
+  /* ── FOOTER ── */
+  footer {
+    margin-top: 60px;
+    padding-top: 20px;
+    border-top: 1.5px solid var(--rule);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .8rem;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 600px) {
+    .wrap { padding: 36px 20px 60px; }
+    .cmp  { grid-template-columns: 1fr; }
+    .summary-section { padding: 24px 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="course-tag">CS3035 Programming Paradigms &nbsp;·&nbsp; Cal State LA</p>
+    <h1>Type &amp; <span>Typing</span></h1>
+    <p class="subtitle">Study notes compiled from lecture slides</p>
+  </header>
+
+  <!-- 1 -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">01</span>
+      <h2>Why Type Matters</h2>
+    </div>
+    <ul>
+      <li>Determines how data is <strong>stored and accessed</strong> in memory</li>
+      <li><strong>Prevents common errors</strong> — catches type mismatches before they cause bugs</li>
+      <li>Improves <strong>readability and documentation</strong> — types are self-documenting</li>
+      <li>Better <strong>maintainability and scalability</strong> of large codebases</li>
+      <li>Enables better <strong>tooling</strong>: autocomplete, refactoring, static analysis</li>
+    </ul>
+    <div class="note">The rise of TypeScript (JavaScript + static typing) is a real-world proof that developers value type safety even in dynamic environments.</div>
+  </section>
+
+  <!-- 2 -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">02</span>
+      <h2>What is Typing?</h2>
+    </div>
+    <p>Typing describes how a language <strong>classifies values into types</strong> and how it <strong>checks and enforces rules</strong> about those types.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Kind</th><th>When Checked</th><th>Examples</th></tr></thead>
+        <tbody>
+          <tr><td>Static</td><td>Compile time</td><td>Java, C, Kotlin, Swift</td></tr>
+          <tr><td>Dynamic</td><td>Runtime</td><td>Python, JavaScript, Ruby</td></tr>
+          <tr><td>Gradual</td><td>Mix of both</td><td>TypeScript, Python + type hints</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">03</span>
+      <h2>Primitive and Composite Types</h2>
+    </div>
+    <p><strong>Primitive types</strong> are basic, built-in types defined by the language itself — e.g., <code style="font-family:monospace;background:#ede8ff;padding:1px 5px;border-radius:2px;">int</code>, <code style="font-family:monospace;background:#ede8ff;padding:1px 5px;border-radius:2px;">char</code>, <code style="font-family:monospace;background:#ede8ff;padding:1px 5px;border-radius:2px;">bool</code>, <code style="font-family:monospace;background:#ede8ff;padding:1px 5px;border-radius:2px;">float</code>.</p>
+    <p><strong>Composite types</strong> are constructed from primitive or other composite types — e.g., array, list, struct, class.</p>
+    <p><strong>Function types</strong> treat functions as first-class values. More on this when we cover functional programming.</p>
+    <pre><span class="cm"># Python type hint examples</span>
+<span class="kw">def</span> <span class="fn">add</span>(a: <span class="tp">int</span>, b: <span class="tp">int</span>) -> <span class="tp">int</span>:
+    <span class="kw">return</span> a + b
+
+numbers:     <span class="tp">list</span>[<span class="tp">int</span>]         = [1, 2, 3]
+coordinates: <span class="tp">tuple</span>[<span class="tp">float</span>, <span class="tp">float</span>] = (10.5, 20.3)
+user_ages:   <span class="tp">dict</span>[<span class="tp">str</span>, <span class="tp">int</span>]    = {<span class="str">"Alice"</span>: 25}</pre>
+  </section>
+
+  <!-- 4 -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">04</span>
+      <h2>Type Equivalence</h2>
+    </div>
+    <p>When are two types considered the <em>same</em>?</p>
+    <ul>
+      <li><strong>Structural equivalence</strong> — two types are equal if they have the same internal structure</li>
+      <li><strong>Name equivalence</strong> — types are equal only if they share the same declared name (used in most modern languages)</li>
+    </ul>
+    <pre><span class="kw">struct</span> <span class="tp">foo</span> { <span class="tp">int</span> a; <span class="tp">float</span> b; };
+<span class="kw">struct</span> <span class="tp">bar</span> { <span class="tp">int</span> a; <span class="tp">float</span> b; };
+
+<span class="cm">// Name equivalence  → foo ≠ bar  (different names)</span>
+<span class="cm">// Structural equiv. → foo = bar  (same structure)</span></pre>
+    <div class="note">C/C++ uses name equivalence — <code>foo</code> and <code>bar</code> are treated as distinct types despite having identical fields.</div>
+  </section>
+
+  <!-- 5 -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">05</span>
+      <h2>Type Compatibility &amp; Coercion</h2>
+    </div>
+    <ul>
+      <li><strong>Type Coercion</strong> — automatic or explicit conversion between compatible types</li>
+      <li><strong>Polymorphism (Subtype)</strong> — a subtype can be used wherever its supertype is expected</li>
+    </ul>
+    <pre><span class="tp">double</span> x = 10;             <span class="cm">// int → double  (implicit, widening)</span>
+<span class="tp">int</span>    y = (<span class="tp">int</span>) 10.1;     <span class="cm">// double → int  (explicit, narrowing / cast)</span>
+<span class="tp">List</span>   z = <span class="kw">new</span> <span class="fn">ArrayList</span>(); <span class="cm">// subtype polymorphism (Java)</span></pre>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Kind</th><th>Direction</th><th>How</th></tr></thead>
+        <tbody>
+          <tr><td>Implicit</td><td>Widening (safe)</td><td>Done automatically by the language</td></tr>
+          <tr><td>Explicit (cast)</td><td>Narrowing (lossy)</td><td>Programmer must write the cast explicitly</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">06</span>
+      <h2>Supertype and Subtype</h2>
+    </div>
+    <ul>
+      <li>Superclass / subclass — via class inheritance</li>
+      <li>Super-interface / sub-interface — via interface hierarchy</li>
+      <li><strong>Structural typing</strong> — compatibility based on shape, not declared name</li>
+    </ul>
+    <pre><span class="cm">// TypeScript — structural typing</span>
+<span class="kw">type</span> <span class="tp">Animal</span> = { name: <span class="tp">string</span> }
+<span class="kw">type</span> <span class="tp">Dog</span>    = { name: <span class="tp">string</span>; breed: <span class="tp">string</span> }
+
+<span class="cm">// Dog has all properties of Animal</span>
+<span class="cm">// → Dog is a subtype of Animal (no explicit declaration needed)</span>
+<span class="kw">const</span> greet = (a: <span class="tp">Animal</span>) => <span class="nb">console</span>.<span class="fn">log</span>(a.name);
+<span class="kw">const</span> myDog: <span class="tp">Dog</span> = { name: <span class="str">"Rex"</span>, breed: <span class="str">"Husky"</span> };
+<span class="fn">greet</span>(myDog); <span class="cm">// ✅ valid</span></pre>
+  </section>
+
+  <!-- 7 -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">07</span>
+      <h2>Strong and Weak Typing</h2>
+    </div>
+    <div class="cmp">
+      <div class="cmp-box strong">
+        <div class="cmp-label">Strong Typing</div>
+        <p style="font-size:.88rem;">Fewer implicit coercions. Type errors are caught and reported.</p>
+        <div class="tags"><span class="tag">Java</span><span class="tag">Python</span><span class="tag">Kotlin</span></div>
+      </div>
+      <div class="cmp-box weak">
+        <div class="cmp-label">Weak Typing</div>
+        <p style="font-size:.88rem;">More implicit coercions. The language silently converts types.</p>
+        <div class="tags"><span class="tag">JavaScript</span><span class="tag">PHP</span></div>
+      </div>
+    </div>
+    <pre><span class="cm">// JavaScript — weak typing example</span>
+<span class="str">"5"</span> - 1   <span class="cm">// → 4   (string silently converted to number)</span>
+<span class="str">"5"</span> + 1   <span class="cm">// → "51" (number silently converted to string!)</span></pre>
+    <div class="note"><strong>Important:</strong> Dynamic ≠ Weak. Python is dynamically typed but strongly typed — it raises a TypeError rather than silently coercing mismatched types.</div>
+  </section>
+
+  <!-- 8 -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">08</span>
+      <h2>Duck Typing</h2>
+    </div>
+    <blockquote>"If it walks like a duck and quacks like a duck, it's a duck."</blockquote>
+    <ul>
+      <li>Whether an object can be used for a task is determined by the <strong>presence of certain methods/properties</strong>, not its declared type</li>
+      <li>A form of <strong>dynamic typing</strong></li>
+    </ul>
+    <pre><span class="kw">class</span> <span class="tp">Dog</span>:
+    <span class="kw">def</span> <span class="fn">speak</span>(<span class="nb">self</span>): <span class="nb">print</span>(<span class="str">"Woof"</span>)
+
+<span class="kw">class</span> <span class="tp">Person</span>:
+    <span class="kw">def</span> <span class="fn">speak</span>(<span class="nb">self</span>): <span class="nb">print</span>(<span class="str">"Hello"</span>)
+
+<span class="kw">def</span> <span class="fn">make_it_speak</span>(thing):
+    thing.<span class="fn">speak</span>()   <span class="cm"># works for anything that has speak()</span>
+
+<span class="fn">make_it_speak</span>(<span class="tp">Dog</span>())     <span class="cm"># → Woof</span>
+<span class="fn">make_it_speak</span>(<span class="tp">Person</span>())  <span class="cm"># → Hello</span></pre>
+    <div class="note">In Java, you'd need to define a <code>Speakable</code> interface explicitly. Duck typing is flexible, but type errors are only caught at runtime.</div>
+  </section>
+
+  <!-- 9 -->
+  <section>
+    <div class="sec-head">
+      <span class="sec-num">09</span>
+      <h2>Type Inference</h2>
+    </div>
+    <p>The compiler/runtime automatically <strong>deduces the type</strong> of a variable from its context — no need to annotate everything.</p>
+    <pre><span class="kw">var</span> a = 10;                            <span class="cm">// int</span>
+<span class="kw">var</span> b = <span class="str">"hello "</span> + a * 2.2;             <span class="cm">// String (arithmetic → concat)</span>
+<span class="kw">var</span> c;                                 <span class="cm">// ❌ error — no initializer</span>
+<span class="kw">var</span> d = x ? <span class="kw">new</span> <span class="tp">Dog</span>() : <span class="kw">new</span> <span class="tp">Animal</span>(); <span class="cm">// Animal (common supertype)</span>
+<span class="kw">var</span> e = y ? <span class="str">"abc"</span> : 12;               <span class="cm">// ❌ error / any — incompatible types</span></pre>
+    <div class="note">Type inference reduces boilerplate while preserving static type safety. Ambiguous cases may produce errors or fall back to a top type (<code>any</code> / <code>Object</code>).</div>
+  </section>
+
+  <!-- Summary -->
+  <section class="summary-section">
+    <div class="sec-head">
+      <span class="sec-num">∑</span>
+      <h2>Summary: Type System Concepts at a Glance</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Concept</th><th>Key Idea</th><th>Examples</th></tr></thead>
+        <tbody>
+          <tr><td>Static Typing</td><td>Types checked at compile time</td><td>Java, C, Kotlin</td></tr>
+          <tr><td>Dynamic Typing</td><td>Types checked at runtime</td><td>Python, Ruby, JS</td></tr>
+          <tr><td>Gradual Typing</td><td>Mix of static and dynamic</td><td>TypeScript, Python hints</td></tr>
+          <tr><td>Strong Typing</td><td>Few implicit coercions</td><td>Java, Python</td></tr>
+          <tr><td>Weak Typing</td><td>Many implicit coercions</td><td>JavaScript, PHP</td></tr>
+          <tr><td>Duck Typing</td><td>Structural compat. (dynamic)</td><td>Python, Ruby</td></tr>
+          <tr><td>Structural Typing</td><td>Structural compat. (static)</td><td>TypeScript, Go</td></tr>
+          <tr><td>Name Equivalence</td><td>Identity by declared name</td><td>Java, C++</td></tr>
+          <tr><td>Type Inference</td><td>Compiler deduces types</td><td>Kotlin, Swift, Scala</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <span>CS3035 · Type and Typing</span>
+    <span>Reading: Textbook Ch. 20.1 &amp; 21</span>
+  </footer>
+
+</div>
+</body>
+</html>
