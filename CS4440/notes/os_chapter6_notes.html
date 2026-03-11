@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 6 – Synchronization Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #f5f0e8;
+    --parchment: #ede5d0;
+    --warm-white: #faf7f0;
+    --ink: #2c2416;
+    --ink-light: #4a3f2e;
+    --rust: #b85c38;
+    --rust-light: #d4795a;
+    --teal: #2d7a6e;
+    --teal-light: #3d9b8c;
+    --gold: #c49a2a;
+    --gold-light: #e8b94a;
+    --blue: #3a5f8a;
+    --blue-light: #5580aa;
+    --purple: #6b4e7d;
+    --border: #c8b89a;
+    --shadow: rgba(44,36,22,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'Crimson Text', serif;
+    font-size: 17px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  .page-header {
+    background: linear-gradient(135deg, #2c2416 0%, #4a3520 50%, #2c2416 100%);
+    color: var(--cream);
+    padding: 3rem 2rem 2.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .page-header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image: repeating-linear-gradient(
+      45deg, transparent, transparent 30px,
+      rgba(255,255,255,0.02) 30px, rgba(255,255,255,0.02) 31px
+    );
+  }
+  .chapter-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.3em;
+    color: var(--gold-light);
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+    opacity: 0.9;
+  }
+  .page-header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.2;
+    margin-bottom: 0.5rem;
+  }
+  .page-header .subtitle {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 1.1rem;
+    color: var(--gold-light);
+    opacity: 0.85;
+  }
+
+  /* ── TAGS ── */
+  .tag {
+    display: inline-block;
+    padding: 0.2em 0.7em;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin: 0.15em;
+  }
+  .tag-problem  { background: #fde8e0; color: #a03020; border: 1px solid #f0c0a8; }
+  .tag-hardware { background: #e0eeea; color: #1f6050; border: 1px solid #aad4cc; }
+  .tag-software { background: #e8eaf6; color: #2a3a80; border: 1px solid #b0bcec; }
+  .tag-concept  { background: #fef6e0; color: #7a5a10; border: 1px solid #e8d090; }
+  .tag-danger   { background: #fde8e8; color: #8a1010; border: 1px solid #f0aaaa; }
+
+  /* ── LAYOUT ── */
+  .container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+  /* ── ACCORDION ── */
+  .section {
+    background: var(--warm-white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 1.2rem;
+    box-shadow: 0 2px 8px var(--shadow);
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+  }
+  .section:hover { box-shadow: 0 4px 16px var(--shadow); }
+
+  .section-toggle {
+    display: none;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.1rem 1.4rem;
+    cursor: pointer;
+    user-select: none;
+    background: var(--warm-white);
+    transition: background 0.15s;
+  }
+  .section-header:hover { background: var(--parchment); }
+  .section-icon {
+    font-size: 1.3rem;
+    flex-shrink: 0;
+    width: 2rem;
+    text-align: center;
+  }
+  .section-title-block { flex: 1; }
+  .section-title-block h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.3;
+  }
+  .section-title-block .section-sub {
+    font-size: 0.82rem;
+    color: var(--ink-light);
+    font-style: italic;
+    margin-top: 0.1rem;
+    opacity: 0.75;
+  }
+  .arrow {
+    font-size: 0.9rem;
+    color: var(--border);
+    transition: transform 0.25s;
+    flex-shrink: 0;
+  }
+  .section-toggle:checked ~ .section-header .arrow { transform: rotate(180deg); }
+  .section-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+  }
+  .section-toggle:checked ~ .section-body { max-height: 6000px; }
+  .section-inner { padding: 0 1.4rem 1.4rem; border-top: 1px solid var(--border); padding-top: 1.2rem; }
+
+  /* ── ACCENT BAR ── */
+  .section.rust   .section-header { border-left: 4px solid var(--rust); }
+  .section.teal   .section-header { border-left: 4px solid var(--teal); }
+  .section.gold   .section-header { border-left: 4px solid var(--gold); }
+  .section.blue   .section-header { border-left: 4px solid var(--blue); }
+  .section.purple .section-header { border-left: 4px solid var(--purple); }
+
+  /* ── TYPOGRAPHY ── */
+  .section-inner h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 1.2rem 0 0.4rem;
+    padding-bottom: 0.2rem;
+    border-bottom: 1px dashed var(--border);
+  }
+  .section-inner h3:first-child { margin-top: 0; }
+  .section-inner p { margin-bottom: 0.7rem; }
+  .section-inner ul, .section-inner ol {
+    margin: 0.4rem 0 0.7rem 1.4rem;
+  }
+  .section-inner li { margin-bottom: 0.3rem; }
+
+  /* ── HIGHLIGHT BOXES ── */
+  .box {
+    border-radius: 6px;
+    padding: 0.9rem 1.1rem;
+    margin: 0.9rem 0;
+    font-size: 0.95rem;
+  }
+  .box-key   { background: #fef9ec; border-left: 3px solid var(--gold); }
+  .box-warn  { background: #fef0f0; border-left: 3px solid var(--rust); }
+  .box-tip   { background: #eef6f4; border-left: 3px solid var(--teal); }
+  .box-info  { background: #eef2fa; border-left: 3px solid var(--blue); }
+  .box-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.35rem;
+    opacity: 0.7;
+  }
+
+  /* ── CODE ── */
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82em;
+    background: #ede8de;
+    padding: 0.1em 0.4em;
+    border-radius: 3px;
+    color: var(--rust);
+  }
+  pre {
+    background: #1e1a12;
+    color: #d4c89a;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    padding: 1rem 1.2rem;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 0.8rem 0;
+    border: 1px solid #3a3020;
+  }
+  pre .kw  { color: #e8a44a; }
+  pre .cm  { color: #7a7060; font-style: italic; }
+  pre .st  { color: #8ac4a0; }
+  pre .fn  { color: #88b4d8; }
+
+  /* ── DIAGRAM / FLOW ── */
+  .flow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin: 0.8rem 0;
+  }
+  .flow-box {
+    background: var(--parchment);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink-light);
+    text-align: center;
+    min-width: 90px;
+  }
+  .flow-box.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .flow-arrow { color: var(--border); font-size: 1.1rem; }
+
+  /* ── REQUIREMENTS GRID ── */
+  .req-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.8rem;
+    margin: 0.8rem 0;
+  }
+  .req-card {
+    border-radius: 6px;
+    padding: 0.9rem;
+    border: 1px solid var(--border);
+  }
+  .req-card h4 {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+  }
+  .req-card p { font-size: 0.88rem; margin: 0; }
+  .req-1 { background: #fef9ec; }
+  .req-1 h4 { color: var(--gold); }
+  .req-2 { background: #eef6f4; }
+  .req-2 h4 { color: var(--teal); }
+  .req-3 { background: #eef2fa; }
+  .req-3 h4 { color: var(--blue); }
+
+  /* ── RACE CONDITION TABLE ── */
+  .race-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    margin: 0.8rem 0;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .race-table th {
+    background: var(--ink);
+    color: var(--cream);
+    padding: 0.5rem 0.8rem;
+    text-align: left;
+  }
+  .race-table td {
+    padding: 0.4rem 0.8rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .race-table tr:nth-child(even) td { background: var(--parchment); }
+  .race-table .highlight td { background: #fde8e0 !important; color: var(--rust); font-weight: 500; }
+
+  /* ── TOOLKIT TABLE ── */
+  .toolkit-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    margin: 0.8rem 0;
+  }
+  .toolkit-table th {
+    background: var(--ink);
+    color: var(--cream);
+    padding: 0.6rem 1rem;
+    text-align: left;
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+  }
+  .toolkit-table td {
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .toolkit-table tr:nth-child(even) td { background: var(--parchment); }
+  .toolkit-table .tool-name { font-weight: 700; font-family: 'Playfair Display', serif; }
+  .pro { color: var(--teal); font-weight: 600; }
+  .con { color: var(--rust); font-weight: 600; }
+
+  /* ── ERROR CARDS ── */
+  .error-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.7rem;
+    margin: 0.8rem 0;
+  }
+  .error-card {
+    background: #fef0f0;
+    border: 1px solid #f0aaaa;
+    border-radius: 6px;
+    padding: 0.8rem;
+  }
+  .error-card h4 {
+    font-size: 0.85rem;
+    color: var(--rust);
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .error-card p { font-size: 0.83rem; margin: 0; color: var(--ink-light); }
+
+  /* ── TOC ── */
+  .toc {
+    background: var(--parchment);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.2rem 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .toc h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--ink-light);
+    margin-bottom: 0.7rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-style: normal;
+  }
+  .toc ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.2rem 1rem;
+  }
+  .toc li { font-size: 0.88rem; counter-increment: toc; }
+  .toc li::before {
+    content: counter(toc) ". ";
+    color: var(--rust);
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+  }
+  .toc ol { counter-reset: toc; }
+
+  /* ── MARS STORY ── */
+  .story-block {
+    background: linear-gradient(135deg, #1e1a12 0%, #2c2416 100%);
+    color: var(--cream);
+    border-radius: 8px;
+    padding: 1.3rem 1.5rem;
+    margin: 1rem 0;
+  }
+  .story-block h4 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    color: var(--gold-light);
+    margin-bottom: 0.6rem;
+  }
+  .story-block p { font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.5rem; }
+  .story-block p:last-child { margin-bottom: 0; }
+
+  /* ── PETERSON CODE SIDE-BY-SIDE ── */
+  .dual-code {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+    margin: 0.8rem 0;
+  }
+  @media (max-width: 600px) { .dual-code { grid-template-columns: 1fr; } }
+  .dual-code pre { margin: 0; }
+  .dual-code .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--gold-light);
+    margin-bottom: 0.3rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ── FOOTER ── */
+  .page-footer {
+    text-align: center;
+    padding: 2rem;
+    font-size: 0.8rem;
+    color: var(--ink-light);
+    opacity: 0.5;
+    font-style: italic;
+  }
+
+  /* ── SEMAPHORE EXAMPLE ── */
+  .sem-example {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+    margin: 0.8rem 0;
+  }
+  @media (max-width: 600px) { .sem-example { grid-template-columns: 1fr; } }
+  .sem-example > div { background: #1e1a12; border-radius: 6px; padding: 0.9rem 1rem; }
+  .sem-example .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--gold-light);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+  }
+  .sem-example pre { background: transparent; border: none; padding: 0; margin: 0; }
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <div class="chapter-label">Operating Systems — Chapter 6</div>
+  <h1>Synchronization Tools</h1>
+  <div class="subtitle">Taming Concurrency: Atomic Hardware to High-Level Monitors</div>
+</header>
+
+<div class="container">
+
+  <!-- TOC -->
+  <nav class="toc">
+    <h3>目次 / Table of Contents</h3>
+    <ol>
+      <li>Race Condition の問題</li>
+      <li>Critical Section Problem</li>
+      <li>Peterson's Solution</li>
+      <li>Hardware Support</li>
+      <li>Mutex Locks</li>
+      <li>Semaphores</li>
+      <li>Monitors</li>
+      <li>Liveness の問題</li>
+      <li>同期ツール比較</li>
+    </ol>
+  </nav>
+
+  <!-- 1. RACE CONDITION -->
+  <div class="section rust">
+    <input type="checkbox" class="section-toggle" id="s1" checked>
+    <label class="section-header" for="s1">
+      <span class="section-icon">⚡</span>
+      <div class="section-title-block">
+        <h2>1. Race Condition と Producer-Consumer Problem</h2>
+        <div class="section-sub">なぜ同期が必要なのか</div>
+      </div>
+      <span class="arrow">▼</span>
+    </label>
+    <div class="section-body"><div class="section-inner">
+      <div style="margin-bottom:0.6rem;">
+        <span class="tag tag-problem">Problem</span>
+        <span class="tag tag-concept">Concurrency</span>
+      </div>
+
+      <h3>Background: Concurrent & Parallel Execution</h3>
+      <ul>
+        <li><strong>Concurrent execution</strong>: CPU scheduler がプロセスを高速に切り替え。1つのプロセスが途中で中断される可能性がある。</li>
+        <li><strong>Parallel execution</strong>: 複数の命令が別々の processing core で同時に実行される。</li>
+        <li>どちらの場合も、共有データの <strong>整合性 (integrity)</strong> が脅かされる。</li>
+      </ul>
+
+      <h3>Producer-Consumer Problem（有界バッファ問題）</h3>
+      <p>Producer と Consumer が固定サイズの buffer を共有する古典的な問題。<code>count</code> 変数で埋まっているスロット数を管理する。</p>
+
+      <div class="box box-warn">
+        <div class="box-label">⚠ 問題点</div>
+        Producer の <code>count++</code> と Consumer の <code>count--</code> は、それぞれ単体では正しく動くが、<strong>同時に実行すると結果が壊れる</strong>。
+      </div>
+
+      <h3>なぜ count++ は危険か？（機械語レベル）</h3>
+      <p><code>count++</code> は実は3命令に展開される:</p>
+      <pre><span class="cm">// count++ の実際の動作</span>
+register1 = count          <span class="cm">// (1) メモリから読む</span>
+register1 = register1 + 1  <span class="cm">// (2) インクリメント</span>
+count = register1          <span class="cm">// (3) メモリに書く</span></pre>
+
+      <h3>Race Condition の例（count = 5 の場合）</h3>
+      <table class="race-table">
+        <tr><th>時刻</th><th>実行内容</th><th>値</th></tr>
+        <tr><td>T0</td><td>Producer: register1 = count</td><td>register1 = 5</td></tr>
+        <tr><td>T1</td><td>Producer: register1 = register1 + 1</td><td>register1 = 6</td></tr>
+        <tr><td>T2</td><td>Consumer: register2 = count</td><td>register2 = 5</td></tr>
+        <tr><td>T3</td><td>Consumer: register2 = register2 - 1</td><td>register2 = 4</td></tr>
+        <tr><td>T4</td><td>Producer: count = register1</td><td>count = 6 ✗</td></tr>
+        <tr class="highlight"><td>T5</td><td>Consumer: count = register2</td><td>count = 4 ✗ （正解は5）</td></tr>
+      </table>
+
+      <div class="box box-key">
+        <div class="box-label">🔑 Race Condition とは</div>
+        複数のプロセスが共有データに同時アクセスし、<strong>実行順序によって結果が変わる</strong>状態。結果が unpredictable（予測不能）になる。
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 2. CRITICAL SECTION -->
+  <div class="section teal">
+    <input type="checkbox" class="section-toggle" id="s2" checked>
+    <label class="section-header" for="s2">
+      <span class="section-icon">🔐</span>
+      <div class="section-title-block">
+        <h2>2. Critical Section Problem</h2>
+        <div class="section-sub">有効な解の3条件</div>
+      </div>
+      <span class="arrow">▼</span>
+    </label>
+    <div class="section-body"><div class="section-inner">
+      <div style="margin-bottom:0.6rem;">
+        <span class="tag tag-concept">Core Concept</span>
+      </div>
+
+      <h3>Critical Section とは</h3>
+      <p>共有変数・テーブル・ファイルなどの共有リソースを操作するコードの部分。あるプロセスがここを実行している間は、他のプロセスは入れない。</p>
+
+      <h3>プロセスの構造</h3>
+      <div class="flow">
+        <div class="flow-box">Entry Section<br><small>入場許可を要求</small></div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box active">CRITICAL<br>SECTION<br><small>共有リソース操作</small></div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box">Exit Section<br><small>退場を通知</small></div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box">Remainder<br>Section</div>
+      </div>
+
+      <h3>有効な解が満たすべき3条件</h3>
+      <div class="req-grid">
+        <div class="req-card req-1">
+          <h4>① Mutual Exclusion（相互排除）</h4>
+          <p>プロセス Pᵢ が critical section にいる間、他のどのプロセスもそこに入れない。</p>
+        </div>
+        <div class="req-card req-2">
+          <h4>② Progress（進行）</h4>
+          <p>Critical section が空いているとき、次に入るプロセスの選択を無限に延期してはならない。</p>
+        </div>
+        <div class="req-card req-3">
+          <h4>③ Bounded Waiting（有界待機）</h4>
+          <p>あるプロセスが要求を出してから許可されるまでに、他のプロセスが割り込める回数に上限がある。</p>
+        </div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 3. PETERSON'S SOLUTION -->
+  <div class="section gold">
+    <input type="checkbox" class="section-toggle" id="s3">
+    <label class="section-header" for="s3">
+      <span class="section-icon">📐</span>
+      <div class="section-title-block">
+        <h2>3. Peterson's Solution</h2>
+        <div class="section-sub">ソフトウェアのみによる古典的解法</div>
+      </div>
+      <span class="arrow">▼</span>
+    </label>
+    <div class="section-body"><div class="section-inner">
+      <div style="margin-bottom:0.6rem;">
+        <span class="tag tag-software">Software</span>
+        <span class="tag tag-concept">Classic</span>
+      </div>
+
+      <h3>アイデア</h3>
+      <p>2プロセス（Pᵢ と Pⱼ）向けの古典的アルゴリズム。2つの共有変数を使う:</p>
+      <ul>
+        <li><code>int turn</code> — 誰のターンか（どちらが critical section に入れるか）</li>
+        <li><code>boolean flag[2]</code> — <code>flag[i] = true</code> は「Pᵢ が入る準備ができた」を意味</li>
+      </ul>
+
+      <div class="dual-code">
+        <div>
+          <div class="label">Process Pᵢ</div>
+          <pre><span class="cm">// Entry Section</span>
+flag[i] = <span class="st">true</span>;
+turn = j;
+<span class="kw">while</span> (flag[j] && turn == j)
+  ; <span class="cm">// wait</span>
+
+<span class="cm">/* CRITICAL SECTION */</span>
+
+<span class="cm">// Exit Section</span>
+flag[i] = <span class="st">false</span>;</pre>
+        </div>
+        <div>
+          <div class="label">Process Pⱼ</div>
+          <pre><span class="cm">// Entry Section</span>
+flag[j] = <span class="st">true</span>;
+turn = i;
+<span class="kw">while</span> (flag[i] && turn == i)
+  ; <span class="cm">// wait</span>
+
+<span class="cm">/* CRITICAL SECTION */</span>
+
+<span class="cm">// Exit Section</span>
+flag[j] = <span class="st">false</span>;</pre>
+        </div>
+      </div>
+
+      <div class="box box-tip">
+        <div class="box-label">💡 鍵となるロジック</div>
+        <strong>「相手に譲る」設計</strong>: Pᵢ は <code>turn = j</code> とセットすることで「もしどちらも入りたいなら相手を優先する」と宣言する。これが Mutual Exclusion の鍵。
+      </div>
+
+      <h3>理論的には完璧だが…</h3>
+      <div class="box box-warn">
+        <div class="box-label">⚠ 現代の問題点</div>
+        <strong>現代のプロセッサやコンパイラは命令を reorder（並べ替え）する</strong>。データ依存のない命令は最適化のため順番が変わる可能性がある。<br><br>
+        例: <code>flag[i] = true; turn = j;</code> が <code>turn = j; flag[i] = true;</code> に並べ替えられると、両プロセスが同時に critical section に入れてしまう。<br><br>
+        <strong>→ 現代のアーキテクチャでは動作が保証されない。</strong>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 4. HARDWARE SUPPORT -->
+  <div class="section blue">
+    <input type="checkbox" class="section-toggle" id="s4">
+    <label class="section-header" for="s4">
+      <span class="section-icon">⚙️</span>
+      <div class="section-title-block">
+        <h2>4. Hardware Synchronization Support</h2>
+        <div class="section-sub">Memory Barriers / test_and_set / compare_and_swap</div>
+      </div>
+      <span class="arrow">▼</span>
+    </label>
+    <div class="section-body"><div class="section-inner">
+      <div style="margin-bottom:0.6rem;">
+        <span class="tag tag-hardware">Hardware</span>
+        <span class="tag tag-concept">Atomic</span>
+      </div>
+
+      <div class="box box-key">
+        <div class="box-label">🔑 Atomic とは</div>
+        <strong>中断・分割できない一つの単位として実行される操作</strong>。ハードウェアバスレベルで保証される。現代のシステムでは「exclusive cache content」方式を使い、他のプロセッサのキャッシュを無効化してから操作を行う。
+      </div>
+
+      <h3>① Memory Barriers（メモリバリア）</h3>
+      <p>命令の reorder を防ぐ「壁」。バリアより前の全ての load/store が完了してから、後の命令が始まる。</p>
+      <pre>x = 100;
+<span class="fn">memory_barrier</span>();  <span class="cm">// この壁を挟むことで順序が保証される</span>
+flag = <span class="st">true</span>;</pre>
+
+      <h3>② test_and_set()</h3>
+      <p>boolean 変数を <code>true</code>にセットし、<strong>元の値</strong>を返す。この読み取りとセットが atomic（不可分）に行われる。</p>
+      <pre><span class="cm">// ハードウェアが提供するアトミック関数</span>
+<span class="kw">bool</span> <span class="fn">test_and_set</span>(<span class="kw">bool</span> *lock) {
+  bool old = *lock;
+  *lock = <span class="st">true</span>;   <span class="cm">// 常にtrueにセット</span>
+  return old;     <span class="cm">// 元の値を返す</span>
+}
+
+<span class="cm">// 使い方（Mutex実装）</span>
+<span class="kw">do</span> {
+  <span class="kw">while</span> (<span class="fn">test_and_set</span>(&lock))
+    ; <span class="cm">// old=trueなら他がロック中 → spin</span>
+  <span class="cm">/* Critical Section */</span>
+  lock = <span class="st">false</span>;  <span class="cm">// ロック解放</span>
+} <span class="kw">while</span> (<span class="st">true</span>);</pre>
+
+      <div class="box box-tip">
+        <div class="box-label">💡 動作の仕組み</div>
+        最初に lock=false のとき: <code>test_and_set</code> が <code>false</code>（元の値）を返しながら lock を <code>true</code> に変える → ループを抜けて CS へ入る。lock=true なら <code>true</code> を返す → ループし続けて待つ（spin）。
+      </div>
+
+      <h3>③ compare_and_swap()（CAS）</h3>
+      <p>メモリの値が <strong>期待値と一致すれば</strong>新しい値に書き換える。不一致なら何もしない。元の値を返す。</p>
+      <pre><span class="kw">int</span> <span class="fn">compare_and_swap</span>(<span class="kw">int</span> *lock, <span class="kw">int</span> expected, <span class="kw">int</span> new_value) {
+  int original = *lock;
+  <span class="kw">if</span> (*lock == expected)
+    *lock = new_value;
+  return original;  <span class="cm">// 元の値を返す</span>
+}
+
+<span class="cm">// 使い方（lock=0がアンロック、1がロック）</span>
+<span class="kw">while</span> (<span class="st">true</span>) {
+  <span class="kw">while</span> (<span class="fn">compare_and_swap</span>(&lock, 0, 1) != 0)
+    ; <span class="cm">// 0→1に交換できなければ待つ（既にロック中）</span>
+  <span class="cm">/* Critical Section */</span>
+  lock = 0;  <span class="cm">// ロック解放</span>
+}</pre>
+
+      <div class="box box-info">
+        <div class="box-label">📌 Key Insight</div>
+        これら atomic instructions が <strong>ほぼすべての高レベル同期ツールの構成要素（building blocks）</strong>となる。Mutex も Semaphore も、内部では CAS や test_and_set を使っている。
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 5. MUTEX LOCKS -->
+  <div class="section rust">
+    <input type="checkbox" class="section-toggle" id="s5">
+    <label class="section-header" for="s5">
+      <span class="section-icon">🔒</span>
+      <div class="section-title-block">
+        <h2>5. Mutex Locks（ミューテックスロック）</h2>
+        <div class="section-sub">Software Tool I: 最もシンプルな同期ツール</div>
+      </div>
+      <span class="arrow">▼</span>
+    </label>
+    <div class="section-body"><div class="section-inner">
+      <div style="margin-bottom:0.6rem;">
+        <span class="tag tag-software">Software Tool I</span>
+      </div>
+
+      <h3>概念</h3>
+      <p>Mutex（Mutual Exclusion）lock は、hardware instructions 上に構築されたシンプルなソフトウェアツール。Critical section を保護し race condition を防ぐ。</p>
+
+      <h3>プロトコル</h3>
+      <ul>
+        <li><code>acquire()</code>: Critical section に入る前にロックを取得する</li>
+        <li><code>release()</code>: Critical section を出たらロックを解放する</li>
+      </ul>
+
+      <pre><span class="cm">// シンプルな実装（boolean available）</span>
+<span class="fn">acquire</span>() {
+  <span class="kw">while</span> (!available)
+    ; <span class="cm">// busy wait（ここが問題）</span>
+  available = <span class="st">false</span>;
+}
+
+<span class="fn">release</span>() {
+  available = <span class="st">true</span>;
+}</pre>
+
+      <h3>Spinlock と Busy Waiting の問題</h3>
+      <div class="box box-warn">
+        <div class="box-label">⚠ Spinlock の欠点</div>
+        プロセスがロック待ちの間、ループを回し続けて <strong>CPU サイクルを消費し続ける</strong>（Busy Waiting）。これを <strong>Spinlock</strong> と呼ぶ。
+      </div>
+
+      <h3>でも Spinlock が有効な場面もある</h3>
+      <p>「ブロック（スリープ）」はコンテキストスイッチ2回分のオーバーヘッドがある（スリープ時と復帰時）。</p>
+      <div class="box box-tip">
+        <div class="box-label">💡 ガイドライン</div>
+        <strong>ロックが保持される時間 &lt; コンテキストスイッチ2回の時間</strong> ならSpinlockの方が効率的。マルチコアシステムでは、あるコアがスピンしながら待つ間、別のコアは CS の仕事を進められる。シングルコアには不適。
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 6. SEMAPHORES -->
+  <div class="section teal">
+    <input type="checkbox" class="section-toggle" id="s6">
+    <label class="section-header" for="s6">
+      <span class="section-icon">🚦</span>
+      <div class="section-title-block">
+        <h2>6. Semaphores（セマフォ）</h2>
+        <div class="section-sub">Software Tool II: 整数カウンタによる強力な同期</div>
+      </div>
+      <span class="arrow">▼</span>
+    </label>
+    <div class="section-body"><div class="section-inner">
+      <div style="margin-bottom:0.6rem;">
+        <span class="tag tag-software">Software Tool II</span>
+        <span class="tag tag-concept">Dijkstra</span>
+      </div>
+
+      <h3>定義</h3>
+      <p>Semaphore S は整数変数で、以下の2つの atomic 操作を通じてのみアクセスされる（Dijkstra が考案）:</p>
+      <ul>
+        <li><code>wait(S)</code>（元はオランダ語で "proberen"=「試みる」の P）: S をデクリメント。S ≤ 0 になるとプロセスはブロックされる。</li>
+        <li><code>signal(S)</code>（元は "verhogen"=「増やす」の V）: S をインクリメント。待機中のプロセスがあれば1つ起こす。</li>
+      </ul>
+
+      <div class="dual-code">
+        <div>
+          <div class="label">wait(S) の定義</div>
+          <pre><span class="fn">wait</span>(S) {
+  <span class="kw">while</span> (S <= 0)
+    ; <span class="cm">// busy wait</span>
+  S--;
+}</pre>
+        </div>
+        <div>
+          <div class="label">signal(S) の定義</div>
+          <pre><span class="fn">signal</span>(S) {
+  S++;
+}</pre>
+        </div>
+      </div>
+
+      <h3>2種類の Semaphore</h3>
+      <ul>
+        <li><strong>Binary Semaphore</strong>: 値が 0 か 1 のみ。Mutex lock と同等に機能する。</li>
+        <li><strong>Counting Semaphore</strong>: 値が任意の範囲。有限リソースへのアクセス管理に使う。</li>
+      </ul>
+
+      <h3>応用例① — リソースプール管理（Counting Semaphore）</h3>
+      <p>ライセンスが3枚ある場合、S=3 で初期化。<code>wait()</code>で取得、<code>signal()</code>で返却。S=0 になったら次のプロセスは自動でブロック。</p>
+
+      <h3>応用例② — 実行順序の制御</h3>
+      <p>P1 の S1 を P2 の S2 より先に実行したい場合:</p>
+      <div class="sem-example">
+        <div>
+          <div class="label">Process P1</div>
+          <pre>S1;
+<span class="fn">signal</span>(synch);</pre>
+        </div>
+        <div>
+          <div class="label">Process P2</div>
+          <pre><span class="fn">wait</span>(synch);
+S2;</pre>
+        </div>
+      </div>
+      <p><code>synch</code> を 0 で初期化 → P2 は P1 が <code>signal</code> するまで S2 を実行できない。</p>
+
+      <h3>Semaphore の危険性</h3>
+      <div class="error-grid">
+        <div class="error-card">
+          <h4>✗ 順序の誤り</h4>
+          <pre style="font-size:0.75rem;background:#1e1a12;color:#d4c89a;padding:0.5rem;border-radius:4px;">signal(mutex);
+// critical section
+wait(mutex);</pre>
+          <p>Mutual exclusion が破れる。複数プロセスが CS に入れてしまう。</p>
+        </div>
+        <div class="error-card">
+          <h4>✗ signal を wait で置換</h4>
+          <pre style="font-size:0.75rem;background:#1e1a12;color:#d4c89a;padding:0.5rem;border-radius:4px;">wait(mutex);
+// critical section
+wait(mutex);</pre>
+          <p>2回目の wait で永久にブロック（Deadlock）。</p>
+        </div>
+        <div class="error-card">
+          <h4>✗ wait/signal を省略</h4>
+          <pre style="font-size:0.75rem;background:#1e1a12;color:#d4c89a;padding:0.5rem;border-radius:4px;">// wait省略
+// critical section
+signal(mutex);</pre>
+          <p>Mutual exclusion が破れるか、永久にブロックされる。</p>
+        </div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 7. MONITORS -->
+  <div class="section purple">
+    <input type="checkbox" class="section-toggle" id="s7">
+    <label class="section-header" for="s7">
+      <span class="section-icon">🏛️</span>
+      <div class="section-title-block">
+        <h2>7. Monitors（モニタ）</h2>
+        <div class="section-sub">Software Tool III: 高レベル抽象化による安全な同期</div>
+      </div>
+      <span class="arrow">▼</span>
+    </label>
+    <div class="section-body"><div class="section-inner">
+      <div style="margin-bottom:0.6rem;">
+        <span class="tag tag-software">Software Tool III</span>
+        <span class="tag tag-concept">ADT</span>
+      </div>
+
+      <h3>なぜ Monitor が必要か</h3>
+      <p>Semaphore は強力だが、プログラマが <code>wait()</code>/<code>signal()</code> を正しく呼ぶ規律に完全に依存する。ちょっとしたミスが Deadlock や mutual exclusion 違反を起こす。より<strong>安全で使いやすい仕組み</strong>が必要。</p>
+
+      <h3>Monitor とは</h3>
+      <p>Monitor は高レベルの同期構造体（Abstract Data Type）。以下を一つにカプセル化する:</p>
+      <ul>
+        <li>共有変数（shared variables）</li>
+        <li>それらを操作するプロシージャ（procedures）</li>
+        <li>組み込みの Mutual Exclusion（自動排他制御）</li>
+      </ul>
+
+      <h3>主要な特徴</h3>
+      <ul>
+        <li><strong>自動 Mutual Exclusion</strong>: 一度に1つのプロセスだけが monitor 内で active になれる。<strong>コンパイラが強制</strong>するので、プログラマが <code>wait()</code>/<code>signal()</code> を呼ぶ必要がない。</li>
+        <li><strong>Condition Variables</strong>: より複雑な同期のために、プロセスは特定の条件を待てる。</li>
+      </ul>
+
+      <h3>Condition Variables の操作</h3>
+      <ul>
+        <li><code>x.wait()</code>: 別のプロセスが x を signal するまで呼び出したプロセスをサスペンドする。同時に monitor ロックをアトミックに解放し、他のプロセスが入れるようにする。</li>
+        <li><code>x.signal()</code>: 条件 x を待っているプロセスを1つだけ再開させる（待っていなければ何もしない）。</li>
+      </ul>
+
+      <div class="box box-tip">
+        <div class="box-label">💡 Semaphore との違い</div>
+        Semaphore の <code>signal()</code> は待機プロセスがいなくてもカウントが増える（後で使える）。Monitor の <code>x.signal()</code> は待機プロセスがいなければ効果なし（記憶しない）。
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 8. LIVENESS -->
+  <div class="section rust">
+    <input type="checkbox" class="section-toggle" id="s8">
+    <label class="section-header" for="s8">
+      <span class="section-icon">💀</span>
+      <div class="section-title-block">
+        <h2>8. Liveness の問題</h2>
+        <div class="section-sub">Deadlock & Priority Inversion</div>
+      </div>
+      <span class="arrow">▼</span>
+    </label>
+    <div class="section-body"><div class="section-inner">
+      <div style="margin-bottom:0.6rem;">
+        <span class="tag tag-danger">Danger</span>
+        <span class="tag tag-concept">Liveness</span>
+      </div>
+
+      <h3>Liveness とは</h3>
+      <p><strong>Liveness</strong> = プロセスが実行中に前進（progress）できることを保証するためにシステムが満たすべき性質の集合。Liveness failure = プロセスが無限に前進できない状態。</p>
+
+      <h3>① Deadlock（デッドロック）</h3>
+      <p>2つ以上のプロセスが、互いに相手が引き起こすイベントを永遠に待ち続ける状態。</p>
+      <pre><span class="cm">// 例: P0とP1がS,Qという2つのsemaphoreを保持し合う</span>
+P0: wait(S) → wait(Q) → ... → signal(S) → signal(Q)
+P1: wait(Q) → wait(S) → ... → signal(Q) → signal(S)
+<span class="cm">// P0がSを保持してQを待ち、P1がQを保持してSを待つ → 永久に膠着</span></pre>
+
+      <h3>② Priority Inversion（優先度逆転）</h3>
+      <p>高優先度プロセスが低優先度プロセスの保持するロックを必要とし、さらにその低優先度プロセスが中優先度プロセスに preempt されて動けない状態。</p>
+      <ul>
+        <li>H（高優先度）がロックを待つ</li>
+        <li>L（低優先度）がロックを保持しているが M（中優先度）に preempt される</li>
+        <li>結果: H が M より低い実効優先度で動くことになる</li>
+      </ul>
+
+      <div class="story-block">
+        <h4>🚀 実例: 1997年 Mars Pathfinder の Sojourner 探査機</h4>
+        <p>火星表面で頻繁にシステムリセットが発生。原因は Priority Inversion だった。</p>
+        <p><strong>bc_dist（高優先度・通信）</strong> → ASI/MET（低優先度・気象）が保持する mutex を待つ → 複数の中優先度タスク（Communications）に ASI/MET が preempt される → watchdog timer がデッドロックを検知してシステムをリセット。</p>
+        <p><strong>解決策</strong>: VxWorks RTOS の <strong>Priority Inheritance Protocol</strong> を有効にするフラグを、地球から探査機にコマンド送信。L が一時的に H の優先度を引き継ぐことで M の preemption を防ぐ。</p>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 9. TOOLKIT COMPARISON -->
+  <div class="section gold">
+    <input type="checkbox" class="section-toggle" id="s9" checked>
+    <label class="section-header" for="s9">
+      <span class="section-icon">🗂️</span>
+      <div class="section-title-block">
+        <h2>9. 同期ツール比較まとめ</h2>
+        <div class="section-sub">The Synchronization Toolkit</div>
+      </div>
+      <span class="arrow">▼</span>
+    </label>
+    <div class="section-body"><div class="section-inner">
+      <table class="toolkit-table">
+        <thead>
+          <tr><th>Tool</th><th>Mechanism</th><th>Pros</th><th>Cons</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="tool-name">Hardware (CAS)</span></td>
+            <td>Atomic Instructions</td>
+            <td><span class="pro">最速、オーバーヘッドなし</span></td>
+            <td>低レベルで複雑、待機キューなし</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">Mutex Lock</span></td>
+            <td>Binary Lock</td>
+            <td>シンプルな保護</td>
+            <td><span class="con">Spinlock なら Busy Waiting</span></td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">Semaphore</span></td>
+            <td>Integer Counter</td>
+            <td>リソースプール管理が可能</td>
+            <td><span class="con">順序ミスが Deadlock を引き起こす</span></td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">Monitor</span></td>
+            <td>Abstract Data Type</td>
+            <td><span class="pro">高レベルの安全性、コンパイラサポート</span></td>
+            <td>オーバーヘッドが大きく、言語依存</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="box box-key" style="margin-top:1rem;">
+        <div class="box-label">🔑 章のまとめ</div>
+        <strong>Synchronization は「parallelism の性能を犠牲にせずに data integrity を維持する技術」</strong>。低レベルの atomic hardware 命令から高レベルの Monitor まで、抽象化の層があり、それぞれトレードオフが存在する。有効な解は常に <strong>Mutual Exclusion・Progress・Bounded Waiting</strong> の3条件を満たさなければならない。
+      </div>
+    </div></div>
+  </div>
+
+</div>
+
+<footer class="page-footer">
+  Operating Systems Architecture Series — Chapter 6: Synchronization Tools
+</footer>
+
+</body>
+</html>
