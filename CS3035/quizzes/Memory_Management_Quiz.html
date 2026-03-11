@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memory Management Quiz — CS3035</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink:    #0f0d1a;
+    --paper:  #f5f2eb;
+    --accent: #6b21e8;
+    --green:  #16a34a;
+    --red:    #dc2626;
+    --muted:  #8a86a0;
+    --rule:   #d4cecc;
+    --tag-bg: #ede8ff;
+    --tag-fg: #5a1ec8;
+    --code-bg:#1a1628;
+    --code-fg:#e2deff;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Lora', serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.7;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: repeating-linear-gradient(transparent, transparent 27px, var(--rule) 27px, var(--rule) 28px);
+    opacity: .25; pointer-events: none; z-index: 0;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 780px; margin: 0 auto; padding: 50px 36px 100px; }
+
+  header { border-left: 6px solid var(--accent); padding: 10px 0 10px 24px; margin-bottom: 40px; }
+  .course-tag { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .15em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  h1 { font-family: 'Syne', sans-serif; font-size: clamp(1.9rem,4vw,3rem); font-weight: 800; line-height: 1.05; }
+  h1 span { color: var(--accent); }
+  .subtitle { font-style: italic; color: var(--muted); font-size: .9rem; margin-top: 6px; }
+
+  .progress-bar-wrap { background: #e5e0d8; border-radius: 99px; height: 8px; margin-bottom: 6px; overflow: hidden; }
+  .progress-bar { height: 100%; background: var(--accent); border-radius: 99px; transition: width .4s ease; width: 0%; }
+  .progress-label { font-family: 'JetBrains Mono', monospace; font-size: .78rem; color: var(--muted); margin-bottom: 28px; }
+
+  .q-card {
+    background: #fff; border: 1.5px solid var(--rule); border-radius: 8px;
+    padding: 28px 28px 22px; margin-bottom: 20px;
+    display: none; animation: fadeUp .35s ease both;
+  }
+  .q-card.active { display: block; }
+
+  .q-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .q-num { font-family: 'JetBrains Mono', monospace; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .q-topic { font-family: 'Syne', sans-serif; font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; background: var(--tag-bg); color: var(--tag-fg); padding: 2px 10px; border-radius: 3px; }
+
+  .q-text { font-size: 1.02rem; font-weight: 500; margin-bottom: 18px; line-height: 1.5; }
+  .q-text code { font-family: 'JetBrains Mono', monospace; background: var(--tag-bg); color: var(--tag-fg); padding: 1px 6px; border-radius: 3px; font-size: .88em; }
+
+  .q-code {
+    background: var(--code-bg); color: var(--code-fg);
+    font-family: 'JetBrains Mono', monospace; font-size: .82rem;
+    line-height: 1.65; padding: 16px 20px; border-radius: 4px;
+    margin-bottom: 16px; overflow-x: auto;
+    border-left: 3px solid var(--accent);
+  }
+  .kw  { color: #c792ea; }
+  .fn  { color: #82aaff; }
+  .str { color: #c3e88d; }
+  .cm  { color: #546e7a; font-style: italic; }
+  .tp  { color: #ffcb6b; }
+  .danger { color: #ff5370; }
+
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .opt {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 16px; border-radius: 6px;
+    border: 1.5px solid var(--rule); cursor: pointer;
+    font-size: .93rem; transition: border-color .15s, background .15s;
+    background: #faf9f6;
+  }
+  .opt:hover:not(.disabled) { border-color: var(--accent); background: #f5f0ff; }
+  .opt-letter {
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: .82rem;
+    min-width: 24px; height: 24px; border-radius: 50%;
+    background: var(--tag-bg); color: var(--tag-fg);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px; transition: background .15s, color .15s;
+  }
+  .opt.correct { border-color: var(--green); background: #f0fdf4; }
+  .opt.correct .opt-letter { background: var(--green); color: #fff; }
+  .opt.wrong { border-color: var(--red); background: #fff1f1; }
+  .opt.wrong .opt-letter { background: var(--red); color: #fff; }
+  .opt.disabled { cursor: default; }
+  .opt.reveal-correct { border-color: var(--green); background: #f0fdf4; }
+  .opt.reveal-correct .opt-letter { background: var(--green); color: #fff; }
+
+  .feedback { margin-top: 14px; padding: 12px 16px; border-radius: 6px; font-size: .88rem; line-height: 1.5; display: none; }
+  .feedback.show { display: block; animation: fadeUp .25s ease both; }
+  .feedback.correct-fb { background: #f0fdf4; border-left: 4px solid var(--green); }
+  .feedback.wrong-fb   { background: #fff1f1; border-left: 4px solid var(--red); }
+  .feedback code { font-family: 'JetBrains Mono', monospace; background: rgba(0,0,0,.06); padding: 1px 5px; border-radius: 3px; font-size: .88em; }
+
+  .next-btn {
+    margin-top: 18px; padding: 10px 28px;
+    background: var(--accent); color: #fff; border: none; border-radius: 4px;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: .9rem;
+    cursor: pointer; display: none; letter-spacing: .04em; transition: opacity .15s;
+  }
+  .next-btn:hover { opacity: .88; }
+  .next-btn.show { display: inline-block; }
+
+  #score-screen { display: none; text-align: center; animation: fadeUp .45s ease both; padding: 40px 20px; }
+  #score-screen.show { display: block; }
+  .score-circle {
+    width: 130px; height: 130px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    margin: 0 auto 24px; font-family: 'Syne', sans-serif;
+  }
+  .score-num { font-size: 2.6rem; font-weight: 800; line-height: 1; }
+  .score-denom { font-size: .85rem; opacity: .8; }
+  .score-title { font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 700; margin-bottom: 8px; }
+  .score-sub { color: var(--muted); font-style: italic; margin-bottom: 28px; }
+  .restart-btn {
+    padding: 12px 36px; background: var(--accent); color: #fff;
+    border: none; border-radius: 4px; cursor: pointer;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem;
+    letter-spacing: .04em; transition: opacity .15s;
+  }
+  .restart-btn:hover { opacity: .88; }
+  .result-log { margin-top: 36px; text-align: left; }
+  .result-log h3 { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; margin-bottom: 12px; }
+  .log-item { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--rule); font-size: .86rem; }
+  .log-icon { font-size: .9rem; flex-shrink: 0; margin-top: 2px; }
+  .log-q { flex: 1; color: #444; }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  @media(max-width:560px) { .wrap { padding: 32px 18px 60px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="course-tag">CS3035 Programming Paradigms &nbsp;·&nbsp; Quiz</p>
+  <h1>Memory <span>Management</span></h1>
+  <p class="subtitle">20 questions · Multiple choice · Instant feedback</p>
+</header>
+
+<div class="progress-bar-wrap"><div class="progress-bar" id="prog-bar"></div></div>
+<p class="progress-label" id="prog-label">Question 1 of 20</p>
+
+<div id="quiz-area"></div>
+<div id="score-screen"></div>
+
+</div>
+<script>
+const questions = [
+  // ── Why Different Storage ──────────────────────────────────────────────
+  {
+    topic: "Storage Types",
+    text: "In the C example from the notes, the variable <code>bar</code> is declared as a local pointer inside <code>foo()</code> and assigned with <code>malloc()</code>. Where does <code>bar</code> itself live, and where does the memory it points to live?",
+    options: [
+      "Both the pointer and the memory live on the heap",
+      "Both the pointer and the memory live on the stack",
+      "The pointer lives on the stack; the allocated memory lives on the heap",
+      "The pointer lives in static storage; the allocated memory lives on the stack"
+    ],
+    answer: 2,
+    feedback: "The <code>bar</code> pointer variable is a local variable — it lives on the <strong>stack</strong>. But <code>malloc()</code> allocates memory on the <strong>heap</strong>. When <code>foo()</code> returns, the stack pointer disappears, but the heap memory persists until <code>free()</code> is called."
+  },
+  {
+    topic: "Storage Types",
+    text: "Which storage type holds global variables and static class members, and lasts for the entire program's lifetime?",
+    options: [
+      "Automatic (Stack) storage",
+      "Dynamic (Heap) storage",
+      "Thread-local storage",
+      "Static storage"
+    ],
+    answer: 3,
+    feedback: "<strong>Static storage</strong> holds global variables and static class members. Their size is known at compile time, they're allocated when the program starts, and they live until the program exits."
+  },
+  {
+    topic: "Storage Types",
+    text: "Local variables and function arguments are stored in which type of storage?",
+    options: [
+      "Static storage — they persist across calls",
+      "Automatic (stack) storage — freed when the function returns",
+      "Dynamic (heap) storage — they must be manually freed",
+      "Thread-local storage — one copy per thread"
+    ],
+    answer: 1,
+    feedback: "Local variables and function arguments use <strong>automatic (stack) storage</strong>. Each function call creates a new stack frame holding these variables, and the frame is automatically popped — and memory reclaimed — when the function returns."
+  },
+  {
+    topic: "Storage Types",
+    text: "What is thread-local storage (TLS)?",
+    options: [
+      "Memory shared between all threads for synchronization",
+      "A special heap region only accessible by the OS kernel",
+      "Per-thread copies of variables that live for the duration of the thread",
+      "Static variables that are protected by a mutex lock"
+    ],
+    answer: 2,
+    feedback: "<strong>Thread-local storage</strong> gives each thread its own independent copy of a variable. This avoids race conditions. In C++ it's declared with <code>thread_local</code>; the variable's lifetime matches the thread that created it."
+  },
+  // ── Dynamic Storage / Memory Leaks ───────────────────────────────────────
+  {
+    topic: "Dynamic Storage",
+    text: "What is a memory leak?",
+    options: [
+      "When a program reads memory it doesn't own",
+      "When heap memory is allocated but never freed, causing RAM usage to grow indefinitely",
+      "When the stack overflows due to too many recursive calls",
+      "When a pointer is reassigned before the old value is saved"
+    ],
+    answer: 1,
+    feedback: "A <strong>memory leak</strong> happens when dynamic (heap) memory is allocated but never released. The program's RAM usage keeps growing. Eventually the system can run out of memory, causing crashes or degraded performance."
+  },
+  {
+    topic: "Dynamic Storage",
+    text: "In C, after calling <code>free(p)</code>, what is the recommended next step and why?",
+    options: [
+      "Call <code>malloc()</code> again immediately to reclaim the slot",
+      "Set <code>p = NULL</code> to avoid a dangling pointer",
+      "Call <code>realloc(p, 0)</code> to ensure the memory is cleared",
+      "Nothing — <code>free()</code> automatically sets the pointer to NULL"
+    ],
+    answer: 1,
+    feedback: "After <code>free(p)</code>, the pointer still holds the old address — it becomes a <strong>dangling pointer</strong>. Setting <code>p = NULL</code> immediately prevents accidental use of the freed memory. <code>free()</code> itself does NOT null the pointer."
+  },
+  {
+    topic: "Dynamic Storage",
+    text: "In C, which function is used to explicitly allocate memory on the heap?",
+    options: ["<code>alloc()</code>", "<code>new()</code>", "<code>malloc()</code>", "<code>create()</code>"],
+    answer: 2,
+    feedback: "<code>malloc(size)</code> (memory allocate) requests a block of <code>size</code> bytes on the heap and returns a pointer to it. It's paired with <code>free(ptr)</code> to release the memory when done. In C++, <code>new</code> / <code>delete</code> serve a similar role for objects."
+  },
+  // ── Linked List / Complex Deallocation ───────────────────────────────────
+  {
+    topic: "Linked List & Deallocation",
+    text: "A linked list has nodes [10] → [20] → NULL, both allocated on the heap. What happens if you only call <code>free(head)</code>?",
+    options: [
+      "Both nodes are freed — free() follows the next pointers automatically",
+      "Only node [10] is freed; node [20] leaks because it's now unreachable",
+      "The program raises a runtime error about the orphaned node",
+      "The garbage collector reclaims node [20] automatically in C"
+    ],
+    answer: 1,
+    feedback: "<code>free(head)</code> only releases the memory for the <strong>first node</strong>. Node [20] still exists on the heap but its address is now lost — it's leaked. C has no GC; you must traverse the entire list and <code>free()</code> each node individually."
+  },
+  {
+    topic: "Linked List & Deallocation",
+    text: "Why is freeing dynamically allocated data structures like linked lists more complex than freeing a simple array?",
+    options: [
+      "Arrays are always larger, so they take longer to free",
+      "Data structures allocate memory internally for each node; freeing only the top-level reference leaves all internal nodes leaked",
+      "Linked lists are stored in static memory, so free() doesn't apply",
+      "You can only free data structures using garbage collection"
+    ],
+    answer: 1,
+    feedback: "Structures like linked lists, trees, and graphs allocate memory for <strong>each node</strong> separately on the heap. Freeing only the head/root pointer abandons all other nodes. You must traverse the structure and free every dynamically allocated piece."
+  },
+  // ── Dispose Pattern ───────────────────────────────────────────────────────
+  {
+    topic: "Dispose Pattern",
+    text: "What problem does the Dispose Pattern solve?",
+    options: [
+      "It prevents classes from being instantiated more than once",
+      "It provides a standardized cleanup method for classes that internally allocate resources, so callers can release everything properly",
+      "It automatically allocates additional heap memory when needed",
+      "It converts dynamic storage to static storage at compile time"
+    ],
+    answer: 1,
+    feedback: "The Dispose Pattern gives resource-owning classes a public cleanup method (like <code>dispose()</code>, <code>close()</code>, or <code>release()</code>) that the caller invokes. This ensures all internal resources — memory, file handles, sockets, DB connections — are properly released, not just the top-level reference."
+  },
+  {
+    topic: "Dispose Pattern",
+    text: "In the dispose spectrum from Manual to Fully Automatic, what distinguishes the 'Semi-Automatic' tier?",
+    options: [
+      "The dispose() method is generated automatically, but the caller must still invoke it",
+      "The dispose() method is written manually by the developer, but the runtime calls it automatically at the right time",
+      "Both writing and calling dispose() are fully automated",
+      "The runtime writes dispose() and the programmer calls it manually"
+    ],
+    answer: 1,
+    feedback: "In <strong>semi-automatic</strong> resource management (like Python's <code>with</code> or C#'s <code>using</code>), the developer still writes the cleanup logic (implementing <code>__exit__</code> / <code>IDisposable</code>), but the <em>runtime guarantees it's called</em> when the block exits — even if an exception occurs."
+  },
+  // ── with / using ──────────────────────────────────────────────────────────
+  {
+    topic: "with / using",
+    text: "What guarantee does Python's <code>with</code> statement provide?",
+    options: [
+      "The block runs in a separate thread with its own memory space",
+      "The resource's cleanup method is called automatically when the block exits, even if an exception is raised",
+      "The variables inside the block are stored in static memory",
+      "The with statement prevents any exceptions from propagating out of the block"
+    ],
+    answer: 1,
+    feedback: "Python's <code>with</code> statement calls <code>__exit__()</code> on the context manager when the block finishes — whether normally or due to an exception. This guarantees cleanup of resources like files and sockets without requiring explicit <code>try/finally</code> boilerplate."
+  },
+  {
+    topic: "with / using",
+    text: "According to the notes, Python and C# have garbage collection for memory. So what is the primary use case for <code>with</code> / <code>using</code>?",
+    options: [
+      "Preventing memory leaks in large arrays",
+      "Managing non-memory resources like file handles, database connections, and network sockets",
+      "Forcing immediate garbage collection of unused objects",
+      "Replacing the need for constructors in a class"
+    ],
+    answer: 1,
+    feedback: "Since Python and C# handle memory automatically via GC, <code>with</code> / <code>using</code> is mainly used for <strong>non-memory resources</strong> — things the GC doesn't know how to release, like open file handles, database connections, or network sockets. These must be closed promptly and deterministically."
+  },
+  // ── RAII ─────────────────────────────────────────────────────────────────
+  {
+    topic: "RAII",
+    text: "What does RAII stand for, and what is its core idea?",
+    options: [
+      "Runtime Automatic Initialization Interface — the OS manages all resources",
+      "Resource Acquisition Is Initialization — tie resource lifetime to object lifetime via constructor/destructor",
+      "Recursive Allocation and Incremental Indexing — a heap management algorithm",
+      "Reference-Counted Automatic Invalidation Index — a GC technique"
+    ],
+    answer: 1,
+    feedback: "<strong>RAII</strong> (Resource Acquisition Is Initialization) is a C++ idiom: acquire the resource in the constructor, and release it in the destructor. When the object goes out of scope, the destructor is called <em>deterministically</em> — the resource is guaranteed to be freed at that exact point."
+  },
+  {
+    topic: "RAII",
+    text: "In C++ RAII, when exactly is the destructor called for a stack-allocated object?",
+    options: [
+      "At an unspecified time, whenever the garbage collector decides to run",
+      "Only when the programmer explicitly calls <code>delete</code>",
+      "Immediately when the object goes out of scope",
+      "When the program exits, regardless of scope"
+    ],
+    answer: 2,
+    feedback: "The key advantage of RAII over GC-based cleanup is <strong>determinism</strong>: the destructor is called the <em>instant</em> the object leaves scope — not some time later. This makes resource release predictable, which is critical for file handles and mutexes."
+  },
+  {
+    topic: "RAII",
+    text: "Which C++ feature is described as being 'built on the exact same RAII principle' as the FileHandler example?",
+    options: [
+      "Virtual functions and dynamic dispatch",
+      "Templates and generic programming",
+      "Smart pointers like <code>unique_ptr</code> and <code>shared_ptr</code>",
+      "The STL <code>vector</code> and <code>map</code> containers"
+    ],
+    answer: 2,
+    feedback: "<strong>Smart pointers</strong> (<code>unique_ptr</code>, <code>shared_ptr</code>) are the most prominent application of RAII in modern C++. They acquire (own) a heap-allocated object and automatically call <code>delete</code> in their destructor when they go out of scope — no manual <code>delete</code> needed."
+  },
+  // ── Garbage Collection ────────────────────────────────────────────────────
+  {
+    topic: "Garbage Collection",
+    text: "Reference Counting GC frees an object when its reference count reaches 0. What is its major limitation?",
+    options: [
+      "It causes frequent 'stop-the-world' pauses that freeze the program",
+      "It cannot handle circular references — two objects referencing each other never reach a count of 0",
+      "It can only track up to 255 references per object",
+      "It does not work with heap-allocated objects, only stack objects"
+    ],
+    answer: 1,
+    feedback: "The classic failure of reference counting: if object A references B and B references A, both have a count of at least 1 forever — they never reach 0, so they're never freed. Python addresses this with a secondary <strong>cycle detector</strong> that runs periodically to find and break cycles."
+  },
+  {
+    topic: "Garbage Collection",
+    text: "Which garbage collection strategy is used by Java, C#, Go, and JavaScript?",
+    options: [
+      "Reference Counting GC",
+      "Manual memory management with free()",
+      "RAII with destructors",
+      "Tracing GC (Mark & Sweep)"
+    ],
+    answer: 3,
+    feedback: "<strong>Tracing (Mark & Sweep) GC</strong> is the dominant approach in Java, C#, Go, and JavaScript. It periodically traces all reachable objects from a root set and reclaims everything not reached. It handles circular references but can cause occasional 'stop-the-world' pauses."
+  },
+  {
+    topic: "Garbage Collection",
+    text: "In Mark & Sweep garbage collection, what is the 'root set'?",
+    options: [
+      "The oldest objects in memory, which are always kept",
+      "The set of active variables, stack frames, and global references from which the GC begins tracing",
+      "All objects allocated in the last GC cycle",
+      "A special memory region reserved for the GC algorithm itself"
+    ],
+    answer: 1,
+    feedback: "The <strong>root set</strong> is the starting point for the Mark phase — it includes active stack frames, global variables, and any live references the program currently holds. The GC traces outward from these roots, marking everything reachable. Anything not reachable from the root set is garbage."
+  },
+  {
+    topic: "Garbage Collection",
+    text: "A circular reference chain L → M → N → O → L exists on the heap, with no external references pointing into the cycle. How does each GC strategy handle it?",
+    options: [
+      "Both Reference Counting and Tracing GC fail to reclaim the cycle",
+      "Reference Counting reclaims it immediately; Tracing GC cannot",
+      "Reference Counting fails (counts never reach 0); Tracing GC reclaims all four nodes because none are reachable from the root set",
+      "Tracing GC fails because it cannot follow circular paths; Reference Counting handles it correctly"
+    ],
+    answer: 2,
+    feedback: "Since L, M, N, and O form a closed cycle with no root-reachable entry point, <strong>Reference Counting</strong> leaves all four alive (each count is ≥ 1). <strong>Tracing GC</strong> starts from the root set, never reaches L/M/N/O, and correctly identifies all four as garbage to be reclaimed."
+  },
+];
+
+let current = 0, score = 0, answered = [], results = [];
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+const shuffledQs = shuffle(questions.map((_, i) => i)).map(i => {
+  const q = questions[i];
+  const sh = shuffle(q.options.map((_, j) => j));
+  return { ...q, options: sh.map(j => q.options[j]), answer: sh.indexOf(q.answer) };
+});
+
+function render() {
+  const area = document.getElementById('quiz-area');
+  area.innerHTML = '';
+  const q = shuffledQs[current];
+  const letters = ['A','B','C','D'];
+
+  const card = document.createElement('div');
+  card.className = 'q-card active';
+
+  const codeBlock = q.code ? `<div class="q-code">${q.code}</div>` : '';
+
+  card.innerHTML = `
+    <div class="q-meta">
+      <span class="q-num">Q${current + 1} / ${shuffledQs.length}</span>
+      <span class="q-topic">${q.topic}</span>
+    </div>
+    <div class="q-text">${q.text}</div>
+    ${codeBlock}
+    <div class="options" id="opts">
+      ${q.options.map((opt, i) => `
+        <div class="opt" data-i="${i}" onclick="choose(${i})">
+          <span class="opt-letter">${letters[i]}</span>
+          <span>${opt}</span>
+        </div>`).join('')}
+    </div>
+    <div class="feedback" id="fb"></div>
+    <button class="next-btn" id="nxt" onclick="next()">
+      ${current < shuffledQs.length - 1 ? 'Next Question →' : 'See Results'}
+    </button>
+  `;
+  area.appendChild(card);
+  updateProgress();
+}
+
+function choose(i) {
+  if (answered[current]) return;
+  answered[current] = true;
+
+  const q = shuffledQs[current];
+  const opts = document.querySelectorAll('.opt');
+  const fb = document.getElementById('fb');
+  const nxt = document.getElementById('nxt');
+
+  opts.forEach(o => o.classList.add('disabled'));
+
+  if (i === q.answer) {
+    score++;
+    opts[i].classList.add('correct');
+    fb.className = 'feedback show correct-fb';
+    fb.innerHTML = `✅ <strong>Correct!</strong> ${q.feedback}`;
+    results.push({ q: q.text, correct: true });
+  } else {
+    opts[i].classList.add('wrong');
+    opts[q.answer].classList.add('reveal-correct');
+    fb.className = 'feedback show wrong-fb';
+    fb.innerHTML = `❌ <strong>Not quite.</strong> ${q.feedback}`;
+    results.push({ q: q.text, correct: false });
+  }
+  nxt.classList.add('show');
+}
+
+function next() {
+  current++;
+  if (current >= shuffledQs.length) showScore();
+  else render();
+}
+
+function updateProgress() {
+  document.getElementById('prog-bar').style.width = (current / shuffledQs.length * 100) + '%';
+  document.getElementById('prog-label').textContent = `Question ${current + 1} of ${shuffledQs.length}`;
+}
+
+function showScore() {
+  document.getElementById('quiz-area').innerHTML = '';
+  document.getElementById('prog-bar').style.width = '100%';
+  document.getElementById('prog-label').textContent = 'Complete!';
+
+  const pct = Math.round(score / shuffledQs.length * 100);
+  let title, sub;
+  if (pct >= 90)      { title = '🏆 Excellent!';   sub = 'Outstanding mastery of Memory Management.'; }
+  else if (pct >= 75) { title = '👍 Good Job!';     sub = 'Solid understanding — review a few topics.'; }
+  else if (pct >= 55) { title = '📖 Keep Studying'; sub = 'A few gaps to fill — revisit your notes.'; }
+  else                { title = '💪 Keep Going!';   sub = "Review the notes and try again — you've got this!"; }
+
+  const log = results.map((r, i) => `
+    <div class="log-item">
+      <span class="log-icon">${r.correct ? '✅' : '❌'}</span>
+      <span class="log-q">Q${i+1}: ${r.q.replace(/<[^>]+>/g,'').substring(0,90)}${r.q.length > 90 ? '…' : ''}</span>
+    </div>`).join('');
+
+  const screen = document.getElementById('score-screen');
+  screen.className = 'show';
+  screen.innerHTML = `
+    <div class="score-circle">
+      <span class="score-num">${score}</span>
+      <span class="score-denom">/ ${shuffledQs.length}</span>
+    </div>
+    <h2 class="score-title">${title}</h2>
+    <p class="score-sub">${sub} &nbsp;·&nbsp; ${pct}%</p>
+    <button class="restart-btn" onclick="restart()">Try Again</button>
+    <div class="result-log">
+      <h3>Your Answers</h3>
+      ${log}
+    </div>
+  `;
+  screen.scrollIntoView({ behavior: 'smooth' });
+}
+
+function restart() {
+  current = 0; score = 0; answered = []; results = [];
+  shuffledQs.length = 0;
+  shuffle(questions.map((_, i) => i)).forEach(i => {
+    const q = questions[i];
+    const sh = shuffle(q.options.map((_, j) => j));
+    shuffledQs.push({ ...q, options: sh.map(j => q.options[j]), answer: sh.indexOf(q.answer) });
+  });
+  document.getElementById('score-screen').className = '';
+  document.getElementById('score-screen').innerHTML = '';
+  render();
+}
+
+render();
+</script>
+</body>
+</html>

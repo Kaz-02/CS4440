@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADT Quiz — CS3035</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d14;
+    --surface: #13131f;
+    --card: #1a1a2e;
+    --border: #2a2a45;
+    --accent: #7c6af7;
+    --accent2: #f76a8c;
+    --accent3: #6af7c8;
+    --text: #e8e8f0;
+    --muted: #6b6b8a;
+    --correct: #3dffc0;
+    --wrong: #ff5f7e;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+    background-image:
+      radial-gradient(ellipse at 10% 0%, rgba(124,106,247,0.15) 0%, transparent 60%),
+      radial-gradient(ellipse at 90% 100%, rgba(247,106,140,0.1) 0%, transparent 60%);
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+
+  .label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 800;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    margin-top: 0.5rem;
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* Progress */
+  .progress-bar-wrap {
+    max-width: 640px;
+    margin: 0 auto 2.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .progress-track {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 99px;
+    transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+    width: 0%;
+  }
+  .progress-text {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  /* Quiz card */
+  .quiz-wrap {
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+
+  .q-number {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    margin-bottom: 1rem;
+  }
+
+  .q-type-badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 99px;
+    font-size: 0.65rem;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.1em;
+    margin-bottom: 1rem;
+    margin-left: 0.5rem;
+  }
+  .badge-mcq { background: rgba(124,106,247,0.2); color: var(--accent); border: 1px solid rgba(124,106,247,0.3); }
+  .badge-tf  { background: rgba(106,247,200,0.15); color: var(--accent3); border: 1px solid rgba(106,247,200,0.25); }
+  .badge-fill{ background: rgba(247,106,140,0.15); color: var(--accent2); border: 1px solid rgba(247,106,140,0.25); }
+
+  .q-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Options */
+  .options { display: flex; flex-direction: column; gap: 0.6rem; }
+
+  .option {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.85rem 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    transition: all 0.15s ease;
+    font-size: 0.95rem;
+    line-height: 1.45;
+    text-align: left;
+  }
+  .option:hover:not(.disabled) {
+    border-color: var(--accent);
+    background: rgba(124,106,247,0.08);
+    transform: translateX(3px);
+  }
+  .option-key {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    background: var(--border);
+    border-radius: 5px;
+    padding: 0.1rem 0.4rem;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+  }
+  .option.correct {
+    border-color: var(--correct);
+    background: rgba(61,255,192,0.08);
+  }
+  .option.correct .option-key { background: rgba(61,255,192,0.3); color: var(--correct); }
+  .option.wrong {
+    border-color: var(--wrong);
+    background: rgba(255,95,126,0.08);
+  }
+  .option.wrong .option-key { background: rgba(255,95,126,0.3); color: var(--wrong); }
+  .option.disabled { cursor: default; }
+
+  /* Fill-in input */
+  .fill-wrap { display: flex; gap: 0.75rem; }
+  .fill-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .fill-input:focus { border-color: var(--accent); }
+  .fill-input.correct { border-color: var(--correct); }
+  .fill-input.wrong { border-color: var(--wrong); }
+  .fill-btn {
+    padding: 0.85rem 1.2rem;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .fill-btn:hover { opacity: 0.85; }
+
+  /* Feedback */
+  .feedback {
+    margin-top: 1.2rem;
+    padding: 1rem 1.2rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    line-height: 1.55;
+    display: none;
+  }
+  .feedback.show { display: block; animation: fadeSlide 0.3s ease; }
+  .feedback.correct-fb { background: rgba(61,255,192,0.08); border: 1px solid rgba(61,255,192,0.25); color: var(--correct); }
+  .feedback.wrong-fb   { background: rgba(255,95,126,0.08);  border: 1px solid rgba(255,95,126,0.25);  color: #ff8fa3; }
+  .feedback strong { color: inherit; }
+
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Next btn */
+  .next-btn {
+    margin-top: 1.5rem;
+    width: 100%;
+    padding: 0.9rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    display: none;
+    transition: opacity 0.15s, transform 0.1s;
+    letter-spacing: 0.05em;
+  }
+  .next-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .next-btn.show { display: block; animation: fadeSlide 0.3s ease; }
+
+  /* Results */
+  .results {
+    display: none;
+    text-align: center;
+    padding: 3rem 2rem;
+  }
+  .results.show { display: block; animation: fadeSlide 0.4s ease; }
+  .score-ring {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 4px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 2.2rem;
+    font-weight: 800;
+    background: radial-gradient(circle at center, rgba(124,106,247,0.15), transparent);
+    position: relative;
+  }
+  .results h2 { font-size: 1.6rem; font-weight: 800; margin-bottom: 0.5rem; }
+  .results p { color: var(--muted); font-size: 0.9rem; margin-bottom: 2rem; }
+  .restart-btn {
+    padding: 0.85rem 2rem;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .restart-btn:hover { opacity: 0.85; }
+
+  .score-breakdown {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+  .score-stat { text-align: center; }
+  .score-stat .num { font-size: 1.8rem; font-weight: 800; }
+  .score-stat .lbl { font-size: 0.7rem; font-family: 'Space Mono', monospace; color: var(--muted); letter-spacing: 0.1em; }
+  .correct-num { color: var(--correct); }
+  .wrong-num { color: var(--wrong); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="label">CS3035 · Programming Paradigms</div>
+  <h1>Abstract Data Types</h1>
+  <div class="subtitle">Quiz // 8 questions</div>
+</header>
+
+<div class="quiz-wrap">
+  <div class="progress-bar-wrap">
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-text" id="progressText">0 / 8</div>
+  </div>
+
+  <div class="card" id="quizCard">
+    <div id="questionArea"></div>
+  </div>
+
+  <div class="card results" id="results">
+    <div class="label" style="text-align:center;margin-bottom:1rem;">Quiz Complete</div>
+    <div class="score-ring" id="scoreRing"></div>
+    <h2 id="resultsTitle"></h2>
+    <p id="resultsMsg"></p>
+    <div class="score-breakdown">
+      <div class="score-stat"><div class="num correct-num" id="correctCount"></div><div class="lbl">Correct</div></div>
+      <div class="score-stat"><div class="num wrong-num" id="wrongCount"></div><div class="lbl">Wrong</div></div>
+    </div>
+    <button class="restart-btn" onclick="restart()">Try Again</button>
+  </div>
+</div>
+
+<script>
+const questions = [
+  {
+    type: 'mcq',
+    q: 'What is an Abstract Data Type (ADT)?',
+    options: [
+      'A data type that specifies both the data it stores and how it is implemented internally',
+      'A data type defined by the data it stores and the operations on it, without specifying how it is implemented',
+      'A concrete implementation of a data structure like a linked list or array',
+      'A programming interface that connects different software components'
+    ],
+    answer: 1,
+    feedback: 'An ADT focuses on *what* it does, not *how* it does it. The implementation details are intentionally hidden — that\'s the "abstract" part.'
+  },
+  {
+    type: 'mcq',
+    q: 'Which of the following is the best example of an ADT?',
+    options: [
+      'An array that stores integers in contiguous memory',
+      'A doubly-linked list with head and tail pointers',
+      'A Stack defined by push(), pop(), peek(), and size() operations',
+      'A binary tree with left and right child references'
+    ],
+    answer: 2,
+    feedback: 'A Stack defined only by its operations (push, pop, peek, size) is a classic ADT. Arrays, linked lists, and binary trees are data structures — they specify implementation details.'
+  },
+  {
+    type: 'tf',
+    q: 'True or False: A data structure and an ADT are the same thing.',
+    options: ['True', 'False'],
+    answer: 1,
+    feedback: 'False. An ADT defines *what* operations exist without specifying implementation. A data structure (e.g., array, linked list) includes the concrete implementation — internal data representation and how operations are carried out.'
+  },
+  {
+    type: 'mcq',
+    q: 'In the ADT → API → Data Structure hierarchy, what role does the API play?',
+    options: [
+      'It stores the actual data in memory',
+      'It is just another name for the ADT',
+      'It is the concrete interface (e.g., method signatures) that bridges the concept and implementation',
+      'It handles memory allocation for the data structure'
+    ],
+    answer: 2,
+    feedback: 'The API (e.g., void push(int x), int pop()) is the concrete, programmable interface. It takes the abstract concept (ADT) and gives it a real form that code can call — while still hiding the implementation.'
+  },
+  {
+    type: 'mcq',
+    q: 'Which of the following correctly describes the role of an API?',
+    options: [
+      'It defines only the data a type stores, not the operations',
+      'It serves as a "contract" between software components and hides the underlying implementation',
+      'It is only used for web services, not for data types or libraries',
+      'It exposes the internal implementation so clients can optimize it'
+    ],
+    answer: 1,
+    feedback: 'An API acts as a contract between client code and implementation code. It hides implementation details and can be applied at many levels: a data type, a module, a library, or a web service (like OpenAI API or Stripe API).'
+  },
+  {
+    type: 'fill',
+    q: 'Fill in the blank: In the Client–API–Implementation model, the code that *uses* the API is called the _______, while the code that implements it is called the _______.',
+    answers: ['client', 'implementation'],
+    feedback: 'The client uses the API without needing to know how it works. The implementation fulfills the contract defined by the API. This separation is the power of good abstraction.'
+  },
+  {
+    type: 'mcq',
+    q: 'Why are object-oriented programming languages considered best suited for implementing ADTs?',
+    options: [
+      'Because they run faster than procedural languages',
+      'Because they bundle data and operations together and can restrict access to implementation details',
+      'Because they support multiple inheritance across all languages',
+      'Because they use dynamic typing, which makes abstraction easier'
+    ],
+    answer: 1,
+    feedback: 'OOP languages like Java and Python naturally map to ADTs: classes bundle data + operations (encapsulation), and access modifiers (public/private) restrict access to internal implementation details.'
+  },
+  {
+    type: 'mcq',
+    q: 'When a Stack is implemented using an array, what happens when the stack is full?',
+    options: [
+      'It throws an exception and the program terminates',
+      'The oldest element is automatically removed (circular buffer)',
+      'The array size is increased, usually by doubling it',
+      'The push() operation is silently ignored'
+    ],
+    answer: 2,
+    feedback: 'A common strategy when an array-backed stack is full is to allocate a new array that is roughly double the size and copy the elements. This is called dynamic resizing (amortized O(1) push).'
+  }
+];
+
+let current = 0;
+let score = 0;
+let answered = 0;
+let wrongAnswers = 0;
+
+function render() {
+  if (current >= questions.length) {
+    showResults();
+    return;
+  }
+
+  const q = questions[current];
+  updateProgress();
+
+  const badgeClass = q.type === 'mcq' ? 'badge-mcq' : q.type === 'tf' ? 'badge-tf' : 'badge-fill';
+  const badgeLabel = q.type === 'mcq' ? 'MCQ' : q.type === 'tf' ? 'True / False' : 'Fill in the blank';
+
+  let optionsHtml = '';
+
+  if (q.type === 'fill') {
+    optionsHtml = `
+      <div class="fill-wrap">
+        <input class="fill-input" id="fillInput1" placeholder="First blank..." autocomplete="off" />
+        <input class="fill-input" id="fillInput2" placeholder="Second blank..." autocomplete="off" />
+        <button class="fill-btn" onclick="checkFill()">Check</button>
+      </div>
+    `;
+  } else {
+    const keys = ['A', 'B', 'C', 'D'];
+    optionsHtml = `<div class="options">` + q.options.map((opt, i) => `
+      <button class="option" id="opt${i}" onclick="choose(${i})">
+        <span class="option-key">${keys[i]}</span>
+        <span>${opt}</span>
+      </button>
+    `).join('') + `</div>`;
+  }
+
+  document.getElementById('questionArea').innerHTML = `
+    <div style="margin-bottom:0.25rem;">
+      <span class="q-number">Q${current + 1} of ${questions.length}</span>
+      <span class="q-type-badge ${badgeClass}">${badgeLabel}</span>
+    </div>
+    <div class="q-text">${q.q}</div>
+    ${optionsHtml}
+    <div class="feedback" id="feedback"></div>
+    <button class="next-btn" id="nextBtn" onclick="next()">${current === questions.length - 1 ? 'See Results →' : 'Next Question →'}</button>
+  `;
+
+  if (q.type === 'fill') {
+    document.getElementById('fillInput1').addEventListener('keydown', e => { if (e.key === 'Enter') checkFill(); });
+    document.getElementById('fillInput2').addEventListener('keydown', e => { if (e.key === 'Enter') checkFill(); });
+  }
+}
+
+function choose(idx) {
+  const q = questions[current];
+  const isCorrect = idx === q.answer;
+  if (isCorrect) score++;
+  else wrongAnswers++;
+
+  const keys = ['A', 'B', 'C', 'D'];
+  q.options.forEach((_, i) => {
+    const el = document.getElementById(`opt${i}`);
+    el.classList.add('disabled');
+    if (i === q.answer) el.classList.add('correct');
+    else if (i === idx && !isCorrect) el.classList.add('wrong');
+  });
+
+  showFeedback(isCorrect, q.feedback);
+}
+
+function checkFill() {
+  const q = questions[current];
+  const v1 = (document.getElementById('fillInput1').value || '').trim().toLowerCase();
+  const v2 = (document.getElementById('fillInput2').value || '').trim().toLowerCase();
+  const correct1 = q.answers[0].toLowerCase();
+  const correct2 = q.answers[1].toLowerCase();
+  const isCorrect = v1 === correct1 && v2 === correct2;
+  if (isCorrect) score++;
+  else wrongAnswers++;
+
+  const i1 = document.getElementById('fillInput1');
+  const i2 = document.getElementById('fillInput2');
+  i1.classList.add(v1 === correct1 ? 'correct' : 'wrong');
+  i2.classList.add(v2 === correct2 ? 'correct' : 'wrong');
+  i1.disabled = true; i2.disabled = true;
+  document.querySelector('.fill-btn').disabled = true;
+
+  const fb = isCorrect ? q.feedback : `The answers are: <strong>${q.answers[0]}</strong> and <strong>${q.answers[1]}</strong>. ${q.feedback}`;
+  showFeedback(isCorrect, fb);
+}
+
+function showFeedback(isCorrect, text) {
+  const fb = document.getElementById('feedback');
+  fb.className = `feedback show ${isCorrect ? 'correct-fb' : 'wrong-fb'}`;
+  fb.innerHTML = `<strong>${isCorrect ? '✓ Correct!' : '✗ Not quite.'}</strong> ${text}`;
+  document.getElementById('nextBtn').classList.add('show');
+}
+
+function next() {
+  current++;
+  render();
+}
+
+function updateProgress() {
+  const pct = (current / questions.length) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = `${current} / ${questions.length}`;
+}
+
+function showResults() {
+  document.getElementById('quizCard').style.display = 'none';
+  document.getElementById('progressFill').style.width = '100%';
+  document.getElementById('progressText').textContent = `${questions.length} / ${questions.length}`;
+
+  const pct = Math.round((score / questions.length) * 100);
+  const r = document.getElementById('results');
+  r.classList.add('show');
+  document.getElementById('scoreRing').textContent = pct + '%';
+  document.getElementById('correctCount').textContent = score;
+  document.getElementById('wrongCount').textContent = wrongAnswers;
+
+  let title, msg;
+  if (pct === 100) { title = 'Perfect Score! 🎉'; msg = 'You nailed every question. ADTs are locked in!'; }
+  else if (pct >= 75) { title = 'Great Work! 💪'; msg = 'Solid understanding. Review the ones you missed.'; }
+  else if (pct >= 50) { title = 'Decent Start 📚'; msg = 'Getting there! Re-read the slides on API and ADT vs. Data Structure.'; }
+  else { title = 'Keep Studying 🔍'; msg = 'Review the core definitions: ADT, API, and the ADT→API→Data Structure hierarchy.'; }
+
+  document.getElementById('resultsTitle').textContent = title;
+  document.getElementById('resultsMsg').textContent = msg;
+}
+
+function restart() {
+  current = 0; score = 0; wrongAnswers = 0;
+  document.getElementById('quizCard').style.display = 'block';
+  document.getElementById('results').classList.remove('show');
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
