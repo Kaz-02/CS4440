@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pointers & References — CS3035</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Fira+Code:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161e;
+    --surface2: #1a1e2a;
+    --border: #252a38;
+    --accent: #a78bfa;   /* violet */
+    --accent2: #34d399;  /* green */
+    --accent3: #60a5fa;  /* blue */
+    --accent4: #fb923c;  /* orange */
+    --danger: #f87171;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --code-bg: #080b10;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Lora', serif;
+    line-height: 1.7;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 55% 40% at 12% 8%, rgba(167,139,250,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 88% 88%, rgba(96,165,250,0.05) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 6rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Header ── */
+  header {
+    text-align: center;
+    padding: 4rem 0 3rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 3rem;
+  }
+
+  .course-tag {
+    display: inline-block;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    background: rgba(167,139,250,0.09);
+    border: 1px solid rgba(167,139,250,0.22);
+    padding: 0.3rem 0.9rem;
+    border-radius: 2px;
+    margin-bottom: 1.2rem;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    background: linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.8rem;
+  }
+
+  header p { color: var(--muted); font-size: 0.95rem; font-style: italic; }
+
+  /* ── TOC ── */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .toc-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+
+  .toc ol {
+    list-style: none;
+    counter-reset: toc;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem 1.5rem;
+  }
+
+  .toc li {
+    counter-increment: toc;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .toc li::before {
+    content: counter(toc, decimal-leading-zero);
+    font-family: 'Fira Code', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  .toc a { color: var(--text); text-decoration: none; font-size: 0.9rem; transition: color 0.2s; }
+  .toc a:hover { color: var(--accent); }
+
+  /* ── Sections ── */
+  .section { margin-bottom: 3rem; animation: fadeUp 0.5s ease both; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+
+  .section-num {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  h2 { font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 700; color: #fff; }
+
+  .section-body {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.8rem 2rem;
+  }
+
+  p { margin-bottom: 1rem; color: #c4cdd8; font-size: 0.97rem; }
+  p:last-child { margin-bottom: 0; }
+
+  /* ── Cards ── */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.1rem 1.2rem;
+  }
+
+  .card-label { font-family: 'Fira Code', monospace; font-size: 0.73rem; color: var(--accent); margin-bottom: 0.4rem; display: block; }
+  .card-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem; }
+  .card p { font-size: 0.84rem; margin: 0; }
+
+  /* ── Code ── */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.2rem 1.5rem;
+    overflow-x: auto;
+    margin: 1.2rem 0;
+  }
+
+  pre code {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.84rem;
+    line-height: 1.8;
+    color: #c9d1d9;
+  }
+
+  .code-label { font-family: 'Fira Code', monospace; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 0.4rem; display: block; }
+
+  /* Syntax highlighting */
+  .kw { color: #ff7b72; }
+  .ty { color: #79c0ff; }
+  .fn { color: #d2a8ff; }
+  .st { color: #a5d6ff; }
+  .cm { color: #8b949e; font-style: italic; }
+  .nu { color: #f0883e; }
+  .op { color: #a78bfa; font-weight: 600; } /* pointer operators */
+
+  /* ── Tables ── */
+  table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.88rem; }
+  th { font-family: 'Syne', sans-serif; font-weight: 600; text-align: left; padding: 0.7rem 1rem; background: var(--surface2); color: var(--accent); font-size: 0.8rem; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); }
+  td { padding: 0.65rem 1rem; border-bottom: 1px solid rgba(37,42,56,0.6); color: #c4cdd8; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  /* ── Callouts ── */
+  .callout {
+    border-left: 3px solid var(--accent3);
+    background: rgba(96,165,250,0.07);
+    border-radius: 0 6px 6px 0;
+    padding: 0.9rem 1.2rem;
+    margin: 1.2rem 0;
+    font-size: 0.9rem;
+    color: #93c5fd;
+  }
+  .callout strong { color: var(--accent3); font-family: 'Syne', sans-serif; }
+
+  .warn {
+    border-left: 3px solid var(--danger);
+    background: rgba(248,113,113,0.07);
+    border-radius: 0 6px 6px 0;
+    padding: 0.9rem 1.2rem;
+    margin: 1.2rem 0;
+    font-size: 0.9rem;
+    color: #fca5a5;
+  }
+  .warn strong { color: var(--danger); }
+
+  .info {
+    border-left: 3px solid var(--accent2);
+    background: rgba(52,211,153,0.07);
+    border-radius: 0 6px 6px 0;
+    padding: 0.9rem 1.2rem;
+    margin: 1.2rem 0;
+    font-size: 0.9rem;
+    color: #6ee7b7;
+  }
+  .info strong { color: var(--accent2); }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 1.6rem 0; }
+
+  /* ── Two-col ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
+
+  .col-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem 1.2rem;
+  }
+
+  .col-box h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 0.6rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .col-box.violet h4 { color: var(--accent); }
+  .col-box.green h4  { color: var(--accent2); }
+  .col-box.blue h4   { color: var(--accent3); }
+  .col-box.orange h4 { color: var(--accent4); }
+
+  .col-box pre { margin: 0; border: none; padding: 0; background: transparent; }
+  .col-box pre code { font-size: 0.8rem; }
+
+  /* ── Memory diagram ── */
+  .mem-diagram {
+    margin: 1.4rem 0;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.83rem;
+  }
+
+  .mem-row {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .mem-name {
+    width: 36px;
+    text-align: right;
+    color: var(--accent);
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .mem-box {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.4rem 0.9rem;
+    min-width: 80px;
+    text-align: center;
+    background: var(--surface2);
+  }
+
+  .mem-box.value   { border-color: var(--accent2); color: var(--accent2); background: rgba(52,211,153,0.08); }
+  .mem-box.address { border-color: var(--accent); color: var(--accent); background: rgba(167,139,250,0.08); }
+  .mem-box.pointed { border-color: var(--accent4); color: var(--accent4); background: rgba(251,146,60,0.08); }
+
+  .mem-arrow {
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    font-size: 1rem;
+  }
+
+  .mem-addr {
+    color: var(--muted);
+    font-size: 0.72rem;
+  }
+
+  /* ── Pointer anatomy annotated code ── */
+  .annotated {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.4rem 1.6rem;
+    margin: 1.2rem 0;
+    position: relative;
+  }
+
+  .annotated code {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.84rem;
+    line-height: 2.1;
+    display: block;
+  }
+
+  .ann-line {
+    display: flex;
+    align-items: baseline;
+    gap: 1.5rem;
+  }
+
+  .ann-code { flex-shrink: 0; }
+
+  .ann-note {
+    font-family: 'Lora', serif;
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-style: italic;
+    border-left: 2px solid var(--border);
+    padding-left: 0.8rem;
+  }
+
+  .ann-note.violet { color: #c4b5fd; border-color: var(--accent); }
+  .ann-note.green  { color: #6ee7b7; border-color: var(--accent2); }
+  .ann-note.blue   { color: #93c5fd; border-color: var(--accent3); }
+  .ann-note.orange { color: #fdba74; border-color: var(--accent4); }
+
+  /* ── Danger cards ── */
+  .danger-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .danger-card {
+    background: var(--surface2);
+    border: 1px solid rgba(248,113,113,0.2);
+    border-top: 3px solid var(--danger);
+    border-radius: 6px;
+    padding: 1rem 1.2rem;
+  }
+
+  .danger-card .danger-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--danger);
+    margin-bottom: 0.4rem;
+  }
+
+  .danger-card p { font-size: 0.83rem; margin: 0; }
+
+  /* ── Arrow diagram for pointer+array ── */
+  .ptr-array-diagram {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.4rem 1.8rem;
+    margin: 1.2rem 0;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.82rem;
+  }
+
+  .pa-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.8rem; }
+  .pa-label { color: var(--accent); width: 40px; flex-shrink: 0; }
+  .pa-addr  { color: var(--muted); font-size: 0.72rem; margin-right: 0.5rem; }
+  .pa-cell  {
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.3rem 0.7rem;
+    background: var(--surface2);
+    min-width: 42px;
+    text-align: center;
+  }
+  .pa-cell.active { border-color: var(--accent); color: var(--accent); background: rgba(167,139,250,0.1); }
+  .pa-cell.val    { color: var(--accent2); border-color: rgba(52,211,153,0.3); }
+  .pa-arrow { color: var(--accent4); }
+
+  @media (max-width: 640px) {
+    .toc ol, .two-col { grid-template-columns: 1fr; }
+    .ann-line { flex-direction: column; gap: 0.3rem; }
+    .ann-note { border-left: none; border-top: 1px solid var(--border); padding-left: 0; padding-top: 0.3rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="course-tag">CS3035 — Programming Paradigms</div>
+    <h1>Pointers &amp; References</h1>
+    <p>Study notes · Chengyu Sun · Cal State LA · Reading: Textbook Ch. 6.2</p>
+  </header>
+
+  <!-- TOC -->
+  <nav class="toc">
+    <div class="toc-title">Contents</div>
+    <ol>
+      <li><a href="#value">Value Semantics</a></li>
+      <li><a href="#reference">Reference Semantics</a></li>
+      <li><a href="#comparison">Value vs Reference Comparison</a></li>
+      <li><a href="#pointers">C Pointers</a></li>
+      <li><a href="#operators">Pointer Operators</a></li>
+      <li><a href="#array">Pointers &amp; Arrays</a></li>
+      <li><a href="#uses">When to Use Pointers</a></li>
+      <li><a href="#dynamic">Dynamic Memory Allocation</a></li>
+      <li><a href="#arithmetic">Pointer Arithmetic</a></li>
+      <li><a href="#dangers">Dangers of Pointers</a></li>
+    </ol>
+  </nav>
+
+  <!-- 1. Value Semantics -->
+  <section class="section" id="value">
+    <div class="section-header"><span class="section-num">01</span><h2>Value Semantics</h2></div>
+    <div class="section-body">
+      <p>With <strong>value semantics</strong>, a variable stores the actual data. When you assign one variable to another or pass it to a function, an independent <em>copy</em> of the data is made. Changes to one variable do not affect the other.</p>
+
+      <div class="two-col" style="margin-top:1.2rem">
+        <div class="col-box violet">
+          <h4>Python example (immutable)</h4>
+          <pre><code>x = <span class="nu">10</span>
+y = x       <span class="cm"># y gets a copy of 10</span>
+x += <span class="nu">1</span>      <span class="cm"># x becomes 11</span>
+<span class="fn">print</span>(x)    <span class="cm"># 11</span>
+<span class="fn">print</span>(y)    <span class="cm"># 10  ← unchanged</span></code></pre>
+        </div>
+        <div class="col-box blue">
+          <h4>Memory model</h4>
+          <div class="mem-diagram">
+            <div class="mem-row">
+              <span class="mem-name">x</span>
+              <div class="mem-box value">10 → 11</div>
+              <span class="mem-arrow">← own slot</span>
+            </div>
+            <div class="mem-row">
+              <span class="mem-name">y</span>
+              <div class="mem-box value">10</div>
+              <span class="mem-arrow">← own copy</span>
+            </div>
+          </div>
+          <p style="font-size:0.82rem;margin-top:0.5rem">x and y are independent. Changing x has no effect on y.</p>
+        </div>
+      </div>
+
+      <div class="callout"><strong>Examples of value semantics:</strong> Python immutable types (int, float, str, tuple) and Java primitive types (int, double, boolean, …).</div>
+    </div>
+  </section>
+
+  <!-- 2. Reference Semantics -->
+  <section class="section" id="reference">
+    <div class="section-header"><span class="section-num">02</span><h2>Reference Semantics</h2></div>
+    <div class="section-body">
+      <p>With <strong>reference semantics</strong>, a variable stores a <em>reference</em> (memory address) pointing to the data. Assigning to another variable or passing to a function copies the <em>reference</em>, not the data — so both variables point to the same object.</p>
+
+      <div class="two-col" style="margin-top:1.2rem">
+        <div class="col-box violet">
+          <h4>Python example (mutable)</h4>
+          <pre><code>a = [<span class="nu">10</span>]
+b = a        <span class="cm"># b gets a copy of the reference</span>
+a[<span class="nu">0</span>] += <span class="nu">1</span>   <span class="cm"># modifies the shared object</span>
+<span class="fn">print</span>(a)     <span class="cm"># [11]</span>
+<span class="fn">print</span>(b)     <span class="cm"># [11] ← also changed!</span></code></pre>
+        </div>
+        <div class="col-box blue">
+          <h4>Memory model</h4>
+          <div class="mem-diagram">
+            <div class="mem-row">
+              <span class="mem-name">a</span>
+              <div class="mem-box address">ref →</div>
+              <span class="mem-arrow" style="color:var(--accent4)">⟶</span>
+              <div class="mem-box pointed">[10]</div>
+            </div>
+            <div class="mem-row">
+              <span class="mem-name">b</span>
+              <div class="mem-box address">ref →</div>
+              <span class="mem-arrow" style="color:var(--accent4)">⟶</span>
+              <span style="font-family:'Fira Code',monospace;font-size:0.75rem;color:var(--muted)">same object ↑</span>
+            </div>
+          </div>
+          <p style="font-size:0.82rem;margin-top:0.5rem">a and b both point to the same list. Mutating through either name affects both.</p>
+        </div>
+      </div>
+
+      <div class="callout"><strong>Examples of reference semantics:</strong> Python mutable types (list, dict, set, most objects) and Java class types (all objects, arrays).</div>
+    </div>
+  </section>
+
+  <!-- 3. Comparison -->
+  <section class="section" id="comparison">
+    <div class="section-header"><span class="section-num">03</span><h2>Value vs Reference — Comparison</h2></div>
+    <div class="section-body">
+      <table>
+        <thead>
+          <tr><th>Feature</th><th>Value Semantics</th><th>Reference Semantics</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>What is copied</td><td>The actual data</td><td>The reference (address)</td></tr>
+          <tr><td>Share data?</td><td>No — each variable has its own copy</td><td>Yes — multiple variables point to the same data</td></tr>
+          <tr><td>Side effects?</td><td>No — changes are local</td><td>Yes — changes are visible through all references</td></tr>
+          <tr><td>Memory efficient for large data?</td><td>No — copying large structs is expensive</td><td>Yes — only a small address is copied</td></tr>
+          <tr><td>Safer?</td><td>Yes — no accidental aliasing</td><td>Requires care to avoid unexpected mutations</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 4. Pointers in C -->
+  <section class="section" id="pointers">
+    <div class="section-header"><span class="section-num">04</span><h2>References in C: Pointers</h2></div>
+    <div class="section-body">
+      <p>All C types use <strong>value semantics</strong> by default. C has no built-in reference semantics — instead, when a reference is needed, you use a <strong>pointer</strong>: a variable that explicitly stores the memory address of another variable.</p>
+
+      <div class="annotated">
+        <div class="ann-line">
+          <code class="ann-code"><span class="ty">int</span> x = <span class="nu">10</span>;</code>
+          <span class="ann-note green">declare an integer variable x, initialize to 10</span>
+        </div>
+        <div class="ann-line">
+          <code class="ann-code"><span class="ty">int</span> <span class="op">*</span>p;</code>
+          <span class="ann-note violet">declare p as a <em>pointer to int</em> — stores an address, not an int</span>
+        </div>
+        <div class="ann-line">
+          <code class="ann-code">p = <span class="op">&amp;</span>x;</code>
+          <span class="ann-note blue"><strong>&amp;</strong> = "address of" — p now holds the memory address of x</span>
+        </div>
+        <div class="ann-line">
+          <code class="ann-code"><span class="ty">int</span> y = <span class="op">*</span>p;</code>
+          <span class="ann-note orange"><strong>*</strong> = "dereference" — follow the address to get the value (10); assign to y</span>
+        </div>
+        <div class="ann-line">
+          <code class="ann-code"><span class="op">*</span>p = <span class="nu">20</span>;</code>
+          <span class="ann-note violet">dereference p and write 20 — this changes x's value to 20!</span>
+        </div>
+        <div class="ann-line">
+          <code class="ann-code"><span class="fn">printf</span>(<span class="st">"p: %p, *p: %d\n"</span>, p, <span class="op">*</span>p); <span class="cm">// address, 20</span></code>
+          <span class="ann-note" style="color:var(--muted)">%p prints the address stored in p</span>
+        </div>
+        <div class="ann-line">
+          <code class="ann-code"><span class="fn">printf</span>(<span class="st">"x: %d, y: %d\n"</span>, x, y);  <span class="cm">// 20, 10</span></code>
+          <span class="ann-note" style="color:var(--muted)">x was modified through *p; y still holds the original copy</span>
+        </div>
+      </div>
+
+      <!-- memory diagram -->
+      <p style="margin-top:1rem"><strong>Memory model after the code above:</strong></p>
+      <div class="ptr-array-diagram">
+        <div class="pa-row">
+          <span class="pa-label">x</span>
+          <span class="pa-addr">addr: 0x100</span>
+          <div class="pa-cell val">20</div>
+          <span class="pa-arrow">← *p writes here</span>
+        </div>
+        <div class="pa-row">
+          <span class="pa-label">y</span>
+          <span class="pa-addr">addr: 0x104</span>
+          <div class="pa-cell val">10</div>
+          <span class="pa-arrow">← value copy made before *p=20</span>
+        </div>
+        <div class="pa-row">
+          <span class="pa-label">p</span>
+          <span class="pa-addr">addr: 0x108</span>
+          <div class="pa-cell active">0x100</div>
+          <span class="pa-arrow">← stores address of x</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Pointer Operators -->
+  <section class="section" id="operators">
+    <div class="section-header"><span class="section-num">05</span><h2>Pointer Operators</h2></div>
+    <div class="section-body">
+      <div class="cards">
+        <div class="card">
+          <span class="card-label">Operator</span>
+          <div class="card-title"><code style="color:var(--accent)">&amp;</code> — address of</div>
+          <p>Returns the memory address of a variable.<br><code>&amp;x</code> gives a pointer to <code>x</code>.</p>
+        </div>
+        <div class="card">
+          <span class="card-label">Operator</span>
+          <div class="card-title"><code style="color:var(--accent)">*</code> — dereference</div>
+          <p>Follows a pointer and accesses the value at that address.<br><code>*p</code> reads/writes the value that <code>p</code> points to.</p>
+        </div>
+        <div class="card">
+          <span class="card-label">Operator</span>
+          <div class="card-title"><code style="color:var(--accent)">-&gt;</code> — member via pointer</div>
+          <p>Access a struct field through a pointer. <code>p-&gt;x</code> is shorthand for <code>(*p).x</code>.</p>
+        </div>
+      </div>
+
+      <span class="code-label" style="margin-top:1.4rem">Struct pointer example</span>
+      <pre><code><span class="kw">typedef struct</span> { <span class="ty">int</span> x; <span class="ty">int</span> y; } Point;
+
+Point p1 = {<span class="nu">1</span>, <span class="nu">2</span>};
+Point <span class="op">*</span>p  = <span class="op">&amp;</span>p1;
+
+<span class="cm">// Two equivalent ways to access members:</span>
+<span class="fn">printf</span>(<span class="st">"%d, %d"</span>, p<span class="op">-&gt;</span>x, p<span class="op">-&gt;</span>y);       <span class="cm">// → 1, 2</span>
+<span class="fn">printf</span>(<span class="st">"%d, %d"</span>, (<span class="op">*</span>p).x, (<span class="op">*</span>p).y);  <span class="cm">// → 1, 2 (same thing)</span></code></pre>
+
+      <div class="info"><strong>p-&gt;field</strong> is just syntactic sugar for <strong>(*p).field</strong>. You'll see <code>-&gt;</code> everywhere in C code that works with structs through pointers.</div>
+    </div>
+  </section>
+
+  <!-- 6. Pointers & Arrays -->
+  <section class="section" id="array">
+    <div class="section-header"><span class="section-num">06</span><h2>Pointers &amp; Arrays</h2></div>
+    <div class="section-body">
+      <p>Arrays and pointers are closely related in C, which is a common source of confusion:</p>
+
+      <table>
+        <thead><tr><th>Feature</th><th>Array</th><th>Pointer</th></tr></thead>
+        <tbody>
+          <tr><td>Stores</td><td>A fixed block of memory (all elements)</td><td>A single address</td></tr>
+          <tr><td>Memory allocated</td><td>Space for all elements</td><td>Space for one address (4 or 8 bytes)</td></tr>
+          <tr><td>Assignable?</td><td>No — array name is not a modifiable l-value</td><td>Yes — can be reassigned to point elsewhere</td></tr>
+          <tr><td>sizeof</td><td>Total size of all elements</td><td>Size of the address (always 4 or 8 bytes)</td></tr>
+        </tbody>
+      </table>
+
+      <span class="code-label" style="margin-top:1.4rem">Array "decay" to pointer</span>
+      <pre><code><span class="ty">int</span> arr[] = {<span class="nu">1</span>, <span class="nu">2</span>, <span class="nu">3</span>};
+<span class="ty">int</span> <span class="op">*</span>p = arr;  <span class="cm">// arr "decays" to &amp;arr[0] — pointer to first element</span>
+
+<span class="cm">// These are all equivalent:</span>
+arr[<span class="nu">0</span>]          <span class="cm">// = 1</span>
+p[<span class="nu">0</span>]            <span class="cm">// = 1</span>
+<span class="op">*</span>p              <span class="cm">// = 1</span>
+<span class="op">*</span>(p + <span class="nu">0</span>)       <span class="cm">// = 1</span></code></pre>
+
+      <!-- visual array diagram -->
+      <div class="ptr-array-diagram">
+        <div class="pa-row">
+          <span class="pa-label">arr</span>
+          <span class="pa-addr">0x200</span>
+          <div class="pa-cell active val">1</div>
+          <div class="pa-cell val">2</div>
+          <div class="pa-cell val">3</div>
+        </div>
+        <div class="pa-row">
+          <span class="pa-label">p</span>
+          <span class="pa-addr">0x210</span>
+          <div class="pa-cell active">0x200</div>
+          <span class="pa-arrow" style="margin-left:0.5rem">← points to arr[0]</span>
+        </div>
+      </div>
+
+      <div class="warn"><strong>⚠ Array decay is a common pitfall.</strong> When you pass an array to a function, it decays into a pointer — the function has <em>no idea</em> how long the array is. Always pass the size as a separate parameter.</div>
+    </div>
+  </section>
+
+  <!-- 7. When to Use Pointers -->
+  <section class="section" id="uses">
+    <div class="section-header"><span class="section-num">07</span><h2>When to Use Pointers</h2></div>
+    <div class="section-body">
+      <div class="cards">
+        <div class="card">
+          <span class="card-label">Use case 01</span>
+          <div class="card-title">Call-by-reference</div>
+          <p>Allow a function to modify a variable in the caller's scope. Pass <code>&amp;x</code> and use <code>*x</code> inside the function.</p>
+        </div>
+        <div class="card">
+          <span class="card-label">Use case 02</span>
+          <div class="card-title">Memory efficiency</div>
+          <p>Passing a pointer to a large struct is cheap (8 bytes). Copying the struct directly can be very expensive.</p>
+        </div>
+        <div class="card">
+          <span class="card-label">Use case 03</span>
+          <div class="card-title">Data structures</div>
+          <p>Linked lists, trees, graphs — each node holds a pointer to the next. Without pointers, these structures are impossible.</p>
+        </div>
+        <div class="card">
+          <span class="card-label">Use case 04</span>
+          <div class="card-title">Dynamic memory</div>
+          <p>Allocate memory at runtime with <code>malloc()</code> — the only way to create data whose size isn't known at compile time.</p>
+        </div>
+      </div>
+
+      <span class="code-label" style="margin-top:1.4rem">Call-by-reference example</span>
+      <pre><code><span class="cm">// Without pointer: does NOT modify the original</span>
+<span class="ty">void</span> <span class="fn">bad_increment</span>(<span class="ty">int</span> x) { x++; }  <span class="cm">// x is a copy</span>
+
+<span class="cm">// With pointer: modifies the original</span>
+<span class="ty">void</span> <span class="fn">increment</span>(<span class="ty">int</span> <span class="op">*</span>x) { (<span class="op">*</span>x)++; }
+
+<span class="ty">int</span> n = <span class="nu">5</span>;
+<span class="fn">bad_increment</span>(n);        <span class="cm">// n still 5</span>
+<span class="fn">increment</span>(<span class="op">&amp;</span>n);           <span class="cm">// n is now 6</span></code></pre>
+    </div>
+  </section>
+
+  <!-- 8. Dynamic Memory Allocation -->
+  <section class="section" id="dynamic">
+    <div class="section-header"><span class="section-num">08</span><h2>Dynamic Memory Allocation</h2></div>
+    <div class="section-body">
+      <p>Static arrays have a fixed size set at compile time. <strong>Dynamic allocation</strong> with <code>malloc()</code> lets you request memory at runtime based on a value not known until the program runs.</p>
+
+      <span class="code-label">malloc + free</span>
+      <pre><code><span class="pp">#include</span> &lt;stdlib.h&gt;   <span class="cm">// provides malloc() and free()</span>
+
+<span class="ty">int</span> n = <span class="nu">10</span>;
+<span class="ty">int</span> <span class="op">*</span>p = <span class="fn">malloc</span>(n * <span class="kw">sizeof</span>(<span class="ty">int</span>));  <span class="cm">// allocate 10 ints = 40 bytes</span>
+<span class="cm">// malloc returns a pointer to the first byte, or NULL on failure</span>
+
+<span class="kw">if</span> (p == <span class="kw">NULL</span>) {
+  <span class="fn">fprintf</span>(stderr, <span class="st">"allocation failed\n"</span>);
+  <span class="kw">return</span> <span class="nu">1</span>;
+}
+
+<span class="cm">// use p as an array...</span>
+<span class="kw">for</span> (<span class="ty">int</span> i = <span class="nu">0</span>; i &lt; n; i++) p[i] = i * <span class="nu">10</span>;
+
+<span class="fn">free</span>(p);   <span class="cm">// release memory back to the system — always do this!</span>
+p = <span class="kw">NULL</span>;  <span class="cm">// good practice: null out pointer after freeing</span></code></pre>
+
+      <div class="two-col">
+        <div class="col-box violet">
+          <h4>Stack memory (automatic)</h4>
+          <pre><code><span class="ty">int</span> arr[<span class="nu">10</span>];  <span class="cm">// fixed at compile time</span>
+<span class="cm">// freed automatically when function returns</span></code></pre>
+          <p style="font-size:0.82rem;margin-top:0.6rem">Size must be a compile-time constant. Fast, automatic cleanup.</p>
+        </div>
+        <div class="col-box orange">
+          <h4>Heap memory (dynamic)</h4>
+          <pre><code><span class="ty">int</span> <span class="op">*</span>arr = <span class="fn">malloc</span>(n * <span class="kw">sizeof</span>(<span class="ty">int</span>));
+<span class="cm">// size can be any runtime value</span>
+<span class="fn">free</span>(arr);  <span class="cm">// YOU must free it</span></code></pre>
+          <p style="font-size:0.82rem;margin-top:0.6rem">Size can be determined at runtime. Must be freed manually.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. Pointer Arithmetic -->
+  <section class="section" id="arithmetic">
+    <div class="section-header"><span class="section-num">09</span><h2>Pointer Arithmetic</h2></div>
+    <div class="section-body">
+      <p>You can do arithmetic on pointers. When you write <code>p + i</code>, C automatically scales <code>i</code> by the size of the pointed-to type — so <code>p + 1</code> moves to the <em>next element</em>, not the next byte.</p>
+
+      <pre><code><span class="ty">int</span> n = <span class="nu">5</span>;
+<span class="ty">int</span> <span class="op">*</span>p = <span class="fn">malloc</span>(n * <span class="kw">sizeof</span>(<span class="ty">int</span>));
+
+<span class="kw">for</span> (<span class="ty">int</span> i = <span class="nu">0</span>; i &lt; n; i++) {
+  <span class="op">*</span>(p + i) = i * <span class="nu">10</span>;          <span class="cm">// pointer arithmetic: *(p+0)=0, *(p+1)=10, …</span>
+}
+<span class="cm">// Equivalent to: p[i] = i * 10;</span>
+
+<span class="cm">// Walk a pointer through an array:</span>
+<span class="ty">int</span> <span class="op">*</span>cur = p;
+<span class="kw">while</span> (cur &lt; p + n) {
+  <span class="fn">printf</span>(<span class="st">"%d "</span>, <span class="op">*</span>cur);
+  cur++;                          <span class="cm">// moves 4 bytes forward (size of int)</span>
+}
+
+<span class="fn">free</span>(p);</code></pre>
+
+      <!-- arithmetic visual -->
+      <div class="ptr-array-diagram">
+        <div class="pa-row">
+          <span class="pa-label" style="width:60px">p+0</span>
+          <span class="pa-addr">0x200</span>
+          <div class="pa-cell val">0</div>
+        </div>
+        <div class="pa-row">
+          <span class="pa-label" style="width:60px">p+1</span>
+          <span class="pa-addr">0x204</span>
+          <div class="pa-cell val">10</div>
+          <span class="pa-arrow">← +4 bytes (sizeof int)</span>
+        </div>
+        <div class="pa-row">
+          <span class="pa-label" style="width:60px">p+2</span>
+          <span class="pa-addr">0x208</span>
+          <div class="pa-cell val">20</div>
+        </div>
+        <div class="pa-row">
+          <span class="pa-label" style="width:60px">p+3</span>
+          <span class="pa-addr">0x20C</span>
+          <div class="pa-cell val">30</div>
+        </div>
+        <div class="pa-row">
+          <span class="pa-label" style="width:60px">p+4</span>
+          <span class="pa-addr">0x210</span>
+          <div class="pa-cell val">40</div>
+        </div>
+      </div>
+
+      <div class="callout"><strong>Key difference from Java/Python:</strong> Neither Java nor Python expose memory addresses or allow arithmetic on references. Pointer arithmetic is a uniquely C (and C++) feature — powerful but dangerous.</div>
+    </div>
+  </section>
+
+  <!-- 10. Dangers -->
+  <section class="section" id="dangers">
+    <div class="section-header"><span class="section-num">10</span><h2>Dangers of Pointers</h2></div>
+    <div class="section-body">
+      <p>Pointers are powerful but are the root cause of many of C's infamous bugs and security vulnerabilities. Every C programmer must know these hazards:</p>
+
+      <div class="danger-grid">
+        <div class="danger-card">
+          <div class="danger-title">⚠ Wild Pointer</div>
+          <p>Using a pointer that was never initialized. Points to a random memory location — reads or writes will corrupt memory.</p>
+          <pre style="background:transparent;border:none;padding:0.5rem 0 0;margin:0"><code style="font-size:0.78rem"><span class="ty">int</span> <span class="op">*</span>p;   <span class="cm">// uninitialized!</span>
+<span class="op">*</span>p = <span class="nu">5</span>;  <span class="er">// ← undefined behavior</span></code></pre>
+        </div>
+        <div class="danger-card">
+          <div class="danger-title">⚠ Dangling Pointer</div>
+          <p>Using a pointer after the memory it pointed to has been freed. The memory may have been reallocated for something else.</p>
+          <pre style="background:transparent;border:none;padding:0.5rem 0 0;margin:0"><code style="font-size:0.78rem"><span class="fn">free</span>(p);
+<span class="op">*</span>p = <span class="nu">5</span>;  <span class="er">// ← use-after-free bug</span></code></pre>
+        </div>
+        <div class="danger-card">
+          <div class="danger-title">⚠ Memory Leak</div>
+          <p>Forgetting to call <code>free()</code> after <code>malloc()</code>. Memory stays allocated for the life of the program, eventually exhausting RAM.</p>
+          <pre style="background:transparent;border:none;padding:0.5rem 0 0;margin:0"><code style="font-size:0.78rem"><span class="ty">int</span> <span class="op">*</span>p = <span class="fn">malloc</span>(<span class="nu">100</span>);
+<span class="cm">// ... forgot free(p);</span>
+<span class="er">// ← memory leak</span></code></pre>
+        </div>
+        <div class="danger-card">
+          <div class="danger-title">⚠ Buffer Overflow</div>
+          <p>Writing past the end of an allocated array. Overwrites adjacent memory — the source of countless real-world exploits (Heartbleed, Morris Worm, etc.).</p>
+          <pre style="background:transparent;border:none;padding:0.5rem 0 0;margin:0"><code style="font-size:0.78rem"><span class="ty">int</span> arr[<span class="nu">3</span>];
+arr[<span class="nu">5</span>] = <span class="nu">99</span>; <span class="er">// ← out of bounds!</span></code></pre>
+        </div>
+        <div class="danger-card">
+          <div class="danger-title">⚠ Arithmetic Errors</div>
+          <p>Miscalculating pointer offsets leads to reading or writing the wrong memory location — often silently.</p>
+          <pre style="background:transparent;border:none;padding:0.5rem 0 0;margin:0"><code style="font-size:0.78rem"><span class="ty">int</span> <span class="op">*</span>p = arr;
+<span class="op">*</span>(p + <span class="nu">100</span>) = <span class="nu">0</span>; <span class="er">// ← way out of range</span></code></pre>
+        </div>
+        <div class="danger-card">
+          <div class="danger-title">✅ Best Practices</div>
+          <p>Always initialize pointers to <code>NULL</code>. Set to <code>NULL</code> after <code>free()</code>. Check <code>malloc</code> return. Use tools like Valgrind or AddressSanitizer to detect leaks.</p>
+          <pre style="background:transparent;border:none;padding:0.5rem 0 0;margin:0"><code style="font-size:0.78rem"><span class="ty">int</span> <span class="op">*</span>p = <span class="kw">NULL</span>; <span class="cm">// safe init</span>
+<span class="fn">free</span>(p);
+p = <span class="kw">NULL</span>;     <span class="cm">// avoid dangling</span></code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>
