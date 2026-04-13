@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 7: Synchronization Examples — Study Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f14;
+    --surface: #16181f;
+    --surface2: #1d2029;
+    --border: #2a2d3a;
+    --accent: #e05c3a;
+    --accent2: #f0a045;
+    --accent3: #4d9de0;
+    --safe: #3ab87a;
+    --text: #d4d6e0;
+    --text-dim: #7a7d8e;
+    --heading: #f0f1f6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 300;
+    line-height: 1.75;
+  }
+
+  /* HEADER */
+  header {
+    position: relative;
+    padding: 80px 60px 60px;
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(77,157,224,0.13) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .chapter-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--accent3);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    font-weight: 900;
+    color: var(--heading);
+    line-height: 1.05;
+    max-width: 760px;
+  }
+  header h1 span { color: var(--accent3); }
+  .header-meta {
+    margin-top: 24px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  /* LAYOUT */
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 60px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 64px;
+  }
+
+  /* SECTION */
+  .section { display: flex; flex-direction: column; gap: 24px; }
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: var(--heading);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .section-title .num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--accent3);
+    border: 1px solid var(--accent3);
+    padding: 2px 8px;
+    border-radius: 2px;
+    letter-spacing: 2px;
+  }
+
+  p { color: var(--text); font-size: 0.97rem; }
+
+  /* DEF BLOCK */
+  .def-block {
+    background: var(--surface);
+    border-left: 3px solid var(--accent3);
+    padding: 20px 24px;
+    border-radius: 0 6px 6px 0;
+  }
+  .def-block .def-term {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 2px;
+    color: var(--accent3);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  /* CARD GRID */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .card:hover { border-color: var(--accent3); transform: translateY(-2px); }
+  .card .card-title {
+    font-weight: 500;
+    color: var(--heading);
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+  }
+  .card p { font-size: 0.85rem; color: var(--text-dim); }
+
+  /* CODE BLOCK */
+  .code-block {
+    background: #0a0b0f;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .code-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .code-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot-red { background: #e05c3a; }
+  .dot-yellow { background: #f0a045; }
+  .dot-green { background: #3ab87a; }
+  .code-dots { display: flex; gap: 6px; }
+  pre {
+    padding: 20px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.82rem;
+    line-height: 1.7;
+    overflow-x: auto;
+    color: #a8b0c8;
+  }
+  .kw { color: #4d9de0; }
+  .fn { color: #f0a045; }
+  .cm { color: #4a4e5e; font-style: italic; }
+  .hl-wait { background: rgba(224,92,58,0.18); }
+  .hl-sig { background: rgba(58,184,122,0.15); }
+  .str { color: #3ab87a; }
+
+  /* TWO-COL CODE */
+  .two-col-code {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  /* SEMAPHORE VARS */
+  .sem-vars {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .sem-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 0.88rem;
+  }
+  .sem-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .badge-mutex { background: rgba(224,92,58,0.15); color: var(--accent); border: 1px solid rgba(224,92,58,0.3); }
+  .badge-count { background: rgba(77,157,224,0.15); color: var(--accent3); border: 1px solid rgba(77,157,224,0.3); }
+
+  /* RULE BOX */
+  .rule-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .rule-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    font-size: 0.9rem;
+  }
+  .rule-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+
+  /* INSIGHT */
+  .insight {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 22px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .insight-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 2px; }
+  .insight p { font-size: 0.88rem; color: var(--text-dim); }
+  .insight p strong { color: var(--text); }
+
+  /* COMPARE TABLE */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+  .compare-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: var(--surface2);
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+  }
+  .compare-table td {
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .compare-table tr:last-child td { border-bottom: none; }
+  .compare-table td:first-child {
+    color: var(--text-dim);
+    font-size: 0.82rem;
+    font-family: 'IBM Plex Mono', monospace;
+    white-space: nowrap;
+  }
+
+  /* PHILOSOPHER TABLE */
+  .phil-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.87rem;
+  }
+  .phil-table th {
+    padding: 10px 14px;
+    background: var(--surface2);
+    color: var(--accent3);
+    text-align: left;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border: 1px solid var(--border);
+  }
+  .phil-table td {
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .phil-table td:first-child { color: var(--accent2); font-weight: 500; }
+
+  /* TOC */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 32px;
+  }
+  .toc a {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    transition: color 0.2s;
+  }
+  .toc a:hover { color: var(--accent3); }
+  .toc a::before { content: attr(data-n); color: var(--accent3); flex-shrink: 0; }
+
+  /* KERNEL COMPARE */
+  .kernel-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .kernel-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .kernel-card .k-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.15rem;
+    color: var(--heading);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+  }
+  .kernel-card .k-row {
+    font-size: 0.86rem;
+  }
+  .kernel-card .k-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+
+  /* POSIX GRID */
+  .posix-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .posix-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+  }
+  .posix-card .p-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--accent2);
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .posix-card p { font-size: 0.85rem; color: var(--text-dim); }
+  .posix-card ul {
+    margin-top: 8px;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .posix-card ul li {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--accent3);
+    padding-left: 12px;
+    position: relative;
+  }
+  .posix-card ul li::before { content: '·'; position: absolute; left: 0; color: var(--text-dim); }
+
+  /* FUTURE GRID */
+  .future-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .future-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 22px;
+  }
+  .future-card .f-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    color: var(--heading);
+    margin-bottom: 10px;
+  }
+  .future-card p { font-size: 0.85rem; color: var(--text-dim); }
+
+  /* TAG */
+  .tag {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.73rem;
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-right: 4px;
+  }
+  .tag-warn { background: rgba(224,92,58,0.15); color: var(--accent); border: 1px solid rgba(224,92,58,0.3); }
+  .tag-ok   { background: rgba(58,184,122,0.15); color: var(--safe); border: 1px solid rgba(58,184,122,0.3); }
+
+  /* DIVIDER */
+  hr.section-div { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 24px 60px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  footer span {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  @media (max-width: 640px) {
+    header { padding: 40px 24px 36px; }
+    .container { padding: 40px 20px; gap: 48px; }
+    .two-col-code, .kernel-grid, .posix-grid, .future-grid { grid-template-columns: 1fr; }
+    .toc { grid-template-columns: 1fr; }
+    footer { padding: 20px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="chapter-label">Operating Systems · Chapter 7</div>
+  <h1>Synchroni<span>zation</span> Examples</h1>
+  <div class="header-meta">Topics: Bounded-Buffer · Readers-Writers · Dining Philosophers · Kernel Sync · POSIX · Java · Beyond Locks</div>
+</header>
+
+<div class="container">
+
+  <!-- TOC -->
+  <nav class="section">
+    <div class="section-title"><span class="num">TOC</span> Contents</div>
+    <div class="toc">
+      <a href="#s1" data-n="01 ·">The Core Challenge</a>
+      <a href="#s2" data-n="02 ·">Bounded-Buffer Problem</a>
+      <a href="#s3" data-n="03 ·">Readers-Writers Problem</a>
+      <a href="#s4" data-n="04 ·">Dining Philosophers</a>
+      <a href="#s5" data-n="05 ·">Kernel Sync: Windows vs Linux</a>
+      <a href="#s6" data-n="06 ·">POSIX Synchronization</a>
+      <a href="#s7" data-n="07 ·">Java Synchronization</a>
+      <a href="#s8" data-n="08 ·">Beyond Locks</a>
+    </div>
+  </nav>
+
+  <hr class="section-div">
+
+  <!-- 1. CORE CHALLENGE -->
+  <section class="section" id="s1">
+    <div class="section-title"><span class="num">01</span> The Core Challenge</div>
+
+    <div class="def-block">
+      <div class="def-term">The Problem</div>
+      <p>When multiple concurrent processes share data, <strong>race conditions</strong> arise — unpredictable outcomes from unsynchronized access. The core task is to enforce <strong>mutual exclusion</strong> and orderly cooperation.</p>
+    </div>
+
+    <p>Three "classic problems" serve as standard benchmarks for any new synchronization scheme. They expose the fundamental challenges of concurrency: mutual exclusion, deadlock, and starvation.</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">Classic Problem 1</div>
+        <p>Bounded-Buffer — coordinating a producer and consumer sharing a fixed-size buffer.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">Classic Problem 2</div>
+        <p>Readers-Writers — managing concurrent reads and exclusive writes on shared data.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">Classic Problem 3</div>
+        <p>Dining Philosophers — allocating limited resources among competing processes without deadlock or starvation.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-div">
+
+  <!-- 2. BOUNDED BUFFER -->
+  <section class="section" id="s2">
+    <div class="section-title"><span class="num">02</span> Bounded-Buffer Problem</div>
+
+    <p>A fixed-size buffer (n slots) is shared between a <strong>producer</strong> (generates items) and a <strong>consumer</strong> (uses items). The challenge: the producer must not add to a full buffer, and the consumer must not take from an empty one.</p>
+
+    <div class="sem-vars">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:4px;">Semaphore Variables</div>
+      <div class="sem-row"><span class="sem-badge badge-mutex">mutex = 1</span><span>Provides mutual exclusion for accesses to the buffer pool.</span></div>
+      <div class="sem-row"><span class="sem-badge badge-count">empty = n</span><span>Counts the number of empty buffer slots. Producer waits when this reaches 0.</span></div>
+      <div class="sem-row"><span class="sem-badge badge-count">full = 0</span><span>Counts the number of full buffer slots. Consumer waits when this reaches 0.</span></div>
+    </div>
+
+    <div class="two-col-code">
+      <div class="code-block">
+        <div class="code-header">
+          <div class="code-dots"><div class="code-dot dot-red"></div><div class="code-dot dot-yellow"></div><div class="code-dot dot-green"></div></div>
+          <span>producer</span>
+        </div>
+        <pre><span class="cm">// produce item...</span>
+<span class="hl-wait">wait(empty);</span>  <span class="cm">// wait if empty=0</span>
+<span class="hl-wait">wait(mutex);</span>  <span class="cm">// wait if mutex=0</span>
+
+<span class="cm">// add item to buffer</span>
+
+<span class="hl-sig">signal(mutex);</span> <span class="cm">// unlock buffer</span>
+<span class="hl-sig">signal(full);</span>  <span class="cm">// signal full slot</span></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-header">
+          <div class="code-dots"><div class="code-dot dot-red"></div><div class="code-dot dot-yellow"></div><div class="code-dot dot-green"></div></div>
+          <span>consumer</span>
+        </div>
+        <pre><span class="hl-wait">wait(full);</span>   <span class="cm">// wait if full=0</span>
+<span class="hl-wait">wait(mutex);</span>  <span class="cm">// wait if mutex=0</span>
+
+<span class="cm">// remove item from buffer</span>
+
+<span class="hl-sig">signal(mutex);</span> <span class="cm">// unlock buffer</span>
+<span class="hl-sig">signal(empty);</span> <span class="cm">// signal empty slot</span>
+<span class="cm">// consume item...</span></pre>
+      </div>
+    </div>
+
+    <div class="insight">
+      <span class="insight-icon">⚠</span>
+      <p><strong>Order matters:</strong> Both producer and consumer acquire <code>mutex</code> <em>after</em> the counting semaphore. Reversing the order (locking mutex first) can cause deadlock if the buffer is full/empty.</p>
+    </div>
+  </section>
+
+  <hr class="section-div">
+
+  <!-- 3. READERS-WRITERS -->
+  <section class="section" id="s3">
+    <div class="section-title"><span class="num">03</span> Readers-Writers Problem</div>
+
+    <p>A shared database is accessed by <strong>readers</strong> (read-only) and <strong>writers</strong> (update). Rules: multiple readers may access simultaneously, but a writer requires exclusive access — no other reader or writer may be active.</p>
+
+    <div class="sem-vars">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:4px;">Shared Variables</div>
+      <div class="sem-row"><span class="sem-badge badge-mutex">rw_mutex = 1</span><span>Provides mutual exclusion for writers; also used by the first/last reader.</span></div>
+      <div class="sem-row"><span class="sem-badge badge-mutex">mutex = 1</span><span>Protects the <code>read_count</code> variable from race conditions.</span></div>
+      <div class="sem-row"><span class="sem-badge badge-count">read_count = 0</span><span>Tracks how many readers are currently active.</span></div>
+    </div>
+
+    <div class="two-col-code">
+      <div class="code-block">
+        <div class="code-header">
+          <div class="code-dots"><div class="code-dot dot-red"></div><div class="code-dot dot-yellow"></div><div class="code-dot dot-green"></div></div>
+          <span>reader</span>
+        </div>
+        <pre><span class="hl-wait">wait(mutex);</span>
+read_count++;
+<span class="kw">if</span> (read_count == <span class="str">1</span>)  <span class="cm">// first in</span>
+  <span class="hl-wait">wait(rw_mutex);</span>  <span class="cm">// lock writers</span>
+<span class="hl-sig">signal(mutex);</span>
+
+<span class="cm">/* ... reading ... */</span>
+
+<span class="hl-wait">wait(mutex);</span>
+read_count--;
+<span class="kw">if</span> (read_count == <span class="str">0</span>)  <span class="cm">// last out</span>
+  <span class="hl-sig">signal(rw_mutex);</span> <span class="cm">// allow writer</span>
+<span class="hl-sig">signal(mutex);</span></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-header">
+          <div class="code-dots"><div class="code-dot dot-red"></div><div class="code-dot dot-yellow"></div><div class="code-dot dot-green"></div></div>
+          <span>writer</span>
+        </div>
+        <pre><span class="hl-wait">wait(rw_mutex);</span>
+
+<span class="cm">/* ... writing ... */</span>
+
+<span class="hl-sig">signal(rw_mutex);</span></pre>
+      </div>
+    </div>
+
+    <div class="rule-box">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:4px;">Key Logic (Reader Priority)</div>
+      <div class="rule-row"><span class="rule-icon">🔵</span><span>The <strong>first reader in</strong> acquires <code>rw_mutex</code>, locking out all writers for the duration.</span></div>
+      <div class="rule-row"><span class="rule-icon">🔵</span><span>Subsequent readers enter freely since they only check <code>read_count</code> under <code>mutex</code>.</span></div>
+      <div class="rule-row"><span class="rule-icon">🔴</span><span>The <strong>last reader out</strong> releases <code>rw_mutex</code>, finally allowing a writer to proceed.</span></div>
+      <div class="rule-row"><span class="rule-icon">⚠️</span><span><strong>Starvation risk:</strong> If readers arrive continuously, writers may never get access (writer starvation).</span></div>
+    </div>
+  </section>
+
+  <hr class="section-div">
+
+  <!-- 4. DINING PHILOSOPHERS -->
+  <section class="section" id="s4">
+    <div class="section-title"><span class="num">04</span> Dining Philosophers Problem</div>
+
+    <p>Five philosophers sit at a circular table, alternating between thinking and eating. One chopstick lies between each pair. To eat, a philosopher must pick up <em>both</em> adjacent chopsticks. The goal: design a protocol with no deadlock and no starvation.</p>
+
+    <p><strong>OS Mapping:</strong></p>
+    <table class="phil-table">
+      <tr>
+        <th>Parable</th>
+        <th>OS Concept</th>
+        <th>Meaning</th>
+      </tr>
+      <tr><td>Philosophers</td><td>Processes / Threads</td><td>Active entities requiring resources to proceed.</td></tr>
+      <tr><td>Chopsticks</td><td>Shared Resources</td><td>Limited items requiring mutual exclusion (e.g., memory, locks).</td></tr>
+      <tr><td>Picking up chopstick</td><td>Resource Acquisition</td><td>Requesting and locking a resource (semaphore/mutex).</td></tr>
+      <tr><td>Eating</td><td>Critical Section</td><td>Process has exclusive access and is performing work.</td></tr>
+      <tr><td>Thinking</td><td>Process Execution</td><td>Running but not needing shared resources.</td></tr>
+    </table>
+
+    <div class="code-block">
+      <div class="code-header">
+        <div class="code-dots"><div class="code-dot dot-red"></div><div class="code-dot dot-yellow"></div><div class="code-dot dot-green"></div></div>
+        <span>naive_solution.c — FLAWED ⚠</span>
+      </div>
+      <pre>semaphore chopstick[<span class="str">5</span>]; <span class="cm">// all init to 1</span>
+
+<span class="cm">/* philosopher i */</span>
+<span class="hl-wait">wait(chopstick[i]);</span>           <span class="cm">// pick up LEFT</span>
+<span class="hl-wait">wait(chopstick[(i+1) % 5]);</span>  <span class="cm">// pick up RIGHT</span>
+<span class="cm">/* ... eat ... */</span>
+<span class="hl-sig">signal(chopstick[i]);</span>
+<span class="hl-sig">signal(chopstick[(i+1) % 5]);</span>
+
+<span class="cm">// ⚠ Deadlock: if ALL five pick up their left chopstick</span>
+<span class="cm">// simultaneously, none can ever pick up the right one.</span></pre>
+    </div>
+
+    <p><strong>Solutions:</strong></p>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">1. Limit Concurrency</div>
+        <p>Allow at most <strong>4 philosophers</strong> at the table at once. Guarantees at least one can always eat.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">2. Atomic Pickup</div>
+        <p>Require a philosopher to pick up both chopsticks only if <strong>both are available</strong> simultaneously (atomic operation).</p>
+      </div>
+      <div class="card">
+        <div class="card-title">3. Asymmetric Rule</div>
+        <p><strong>Odd</strong> philosophers pick left then right; <strong>even</strong> philosophers pick right then left. Breaks circular wait.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">4. Resource Hierarchy</div>
+        <p>Number the chopsticks and require philosophers to always pick up the <strong>lower-numbered</strong> one first. Prevents circular wait.</p>
+      </div>
+    </div>
+
+    <p><strong>Monitor Solution (best approach):</strong></p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <div class="code-dots"><div class="code-dot dot-red"></div><div class="code-dot dot-yellow"></div><div class="code-dot dot-green"></div></div>
+        <span>monitor DiningPhilosophers</span>
+      </div>
+      <pre><span class="kw">enum</span> {THINKING, HUNGRY, EATING} state[<span class="str">5</span>];
+condition self[<span class="str">5</span>];
+
+<span class="kw">void</span> <span class="fn">pickup</span>(<span class="kw">int</span> i) {
+  state[i] = HUNGRY;
+  <span class="fn">test</span>(i);
+  <span class="kw">if</span> (state[i] != EATING) self[i].<span class="fn">wait</span>(); <span class="cm">// block</span>
+}
+
+<span class="kw">void</span> <span class="fn">putdown</span>(<span class="kw">int</span> i) {
+  state[i] = THINKING;
+  <span class="fn">test</span>((i + <span class="str">4</span>) % <span class="str">5</span>); <span class="cm">// check left neighbor</span>
+  <span class="fn">test</span>((i + <span class="str">1</span>) % <span class="str">5</span>); <span class="cm">// check right neighbor</span>
+}
+
+<span class="kw">void</span> <span class="fn">test</span>(<span class="kw">int</span> i) {
+  <span class="cm">// can eat only if HUNGRY and both neighbors NOT EATING</span>
+  <span class="kw">if</span> (state[(i+<span class="str">4</span>)%<span class="str">5</span>] != EATING &amp;&amp;
+      state[i] == HUNGRY &amp;&amp;
+      state[(i+<span class="str">1</span>)%<span class="str">5</span>] != EATING) {
+    state[i] = EATING;
+    self[i].<span class="fn">signal</span>();
+  }
+}</pre>
+    </div>
+
+    <div class="insight">
+      <span class="insight-icon">💡</span>
+      <p><strong>Monitor advantage:</strong> Centralizes the complex logic of acquiring and releasing resources, making it far less error-prone than managing individual semaphores. <strong>Caveat:</strong> While deadlock-free, this solution does not guarantee fairness — a philosopher could still starve.</p>
+    </div>
+  </section>
+
+  <hr class="section-div">
+
+  <!-- 5. KERNEL SYNC -->
+  <section class="section" id="s5">
+    <div class="section-title"><span class="num">05</span> Kernel Synchronization: Windows vs. Linux</div>
+
+    <p>The classic problem principles are directly applied within OS kernels. These are low-level mechanisms that protect the kernel itself — the foundation upon which user-level APIs are built.</p>
+
+    <div class="kernel-grid">
+      <div class="kernel-card">
+        <div class="k-title">Windows</div>
+        <div class="k-row">
+          <div class="k-label">Core Mechanism</div>
+          <p>Uses <strong>Dispatcher Objects</strong> for thread synchronization (mutexes, semaphores, events). Objects are in a <em>signaled</em> (available, thread won't block) or <em>nonsignaled</em> (unavailable, thread will block) state.</p>
+        </div>
+        <div class="k-row">
+          <div class="k-label">Short Critical Sections</div>
+          <p>Uses <strong>spinlocks</strong> on multiprocessor systems. The kernel ensures a thread holding a spinlock is never preempted.</p>
+        </div>
+        <div class="k-row">
+          <div class="k-label">User-Mode Optimization</div>
+          <p><strong>Critical-section objects</strong> are efficient user-mode mutexes that only allocate a kernel mutex when there is actual contention.</p>
+        </div>
+      </div>
+      <div class="kernel-card">
+        <div class="k-title">Linux</div>
+        <div class="k-row">
+          <div class="k-label">Kernel Model</div>
+          <p>Fully <strong>preemptive kernel</strong> since version 2.6. Any task can be preempted even while running in kernel mode.</p>
+        </div>
+        <div class="k-row">
+          <div class="k-label">Short Critical Sections</div>
+          <p>Primary locking mechanism on SMP systems is the <strong>spinlock</strong>, held for very short durations. For longer durations, <strong>mutex locks</strong> are used (sleeping task).</p>
+        </div>
+        <div class="k-row">
+          <div class="k-label">Atomic Integers</div>
+          <p>Provides <code>atomic_t</code> for simple lock-free counter operations: <code>atomic_set</code>, <code>atomic_add</code>, <code>atomic_inc</code>, <code>atomic_read</code>.</p>
+        </div>
+        <div class="k-row">
+          <div class="k-label">Preemption Control</div>
+          <p><code>preempt_disable()</code> / <code>preempt_enable()</code> — a <code>preempt_count</code> per-task tracks lock acquisitions to prevent preemption while a lock is held.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-div">
+
+  <!-- 6. POSIX -->
+  <section class="section" id="s6">
+    <div class="section-title"><span class="num">06</span> POSIX Synchronization</div>
+
+    <p>The POSIX API provides a standard set of user-level synchronization tools for programmers on UNIX, Linux, and macOS.</p>
+
+    <div class="posix-grid">
+      <div class="posix-card">
+        <div class="p-title">Mutex Locks (pthread_mutex_t)</div>
+        <p>The fundamental technique for protecting critical sections.</p>
+        <ul>
+          <li>pthread_mutex_init()</li>
+          <li>pthread_mutex_lock()</li>
+          <li>pthread_mutex_unlock()</li>
+        </ul>
+      </div>
+      <div class="posix-card">
+        <div class="p-title">Semaphores (sem_t)</div>
+        <p><strong>Named</strong> (<code>sem_open()</code>): shared between unrelated processes.<br><strong>Unnamed</strong> (<code>sem_init()</code>): shared between threads of the same process.</p>
+        <ul>
+          <li>sem_wait() — decrement (P)</li>
+          <li>sem_post() — increment (V)</li>
+        </ul>
+      </div>
+      <div class="posix-card">
+        <div class="p-title">Condition Variables (pthread_cond_t)</div>
+        <p>Used with a mutex to wait for a specific condition to become true. Avoids busy-waiting.</p>
+        <ul>
+          <li>pthread_cond_wait()</li>
+          <li>pthread_cond_signal()</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="two-col-code">
+      <div class="code-block">
+        <div class="code-header">
+          <div class="code-dots"><div class="code-dot dot-red"></div><div class="code-dot dot-yellow"></div><div class="code-dot dot-green"></div></div>
+          <span>POSIX named semaphore</span>
+        </div>
+        <pre><span class="cm">// shared between unrelated processes</span>
+sem_t *sem;
+sem = <span class="fn">sem_open</span>(<span class="str">"SEM"</span>, O_CREAT, <span class="str">0666</span>, <span class="str">1</span>);
+
+<span class="hl-wait">sem_wait(sem);</span>   <span class="cm">// acquire</span>
+<span class="cm">/* critical section */</span>
+<span class="hl-sig">sem_post(sem);</span>   <span class="cm">// release</span></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-header">
+          <div class="code-dots"><div class="code-dot dot-red"></div><div class="code-dot dot-yellow"></div><div class="code-dot dot-green"></div></div>
+          <span>POSIX unnamed semaphore</span>
+        </div>
+        <pre><span class="cm">// shared between threads of same process</span>
+sem_t sem;
+<span class="fn">sem_init</span>(&amp;sem, <span class="str">0</span>, <span class="str">1</span>);
+<span class="cm">// flag 0 = same-process threads only</span>
+
+<span class="hl-wait">sem_wait</span>(&amp;sem);  <span class="cm">// acquire</span>
+<span class="cm">/* critical section */</span>
+<span class="hl-sig">sem_post</span>(&amp;sem);  <span class="cm">// release</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-div">
+
+  <!-- 7. JAVA -->
+  <section class="section" id="s7">
+    <div class="section-title"><span class="num">07</span> Java Synchronization</div>
+
+    <div class="def-block">
+      <div class="def-term">Built-in Monitor</div>
+      <p>Every Java object has an associated <strong>lock</strong> and a single unnamed condition variable. Declaring a method <code>synchronized</code> forces a thread to acquire the object's lock before executing it.</p>
+    </div>
+
+    <div class="rule-box">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:4px;">Entry Set & Wait Set</div>
+      <div class="rule-row"><span class="rule-icon">🔷</span><span><strong>Entry Set:</strong> Threads blocked trying to acquire the lock are queued here.</span></div>
+      <div class="rule-row"><span class="rule-icon">🔷</span><span><strong>Wait Set:</strong> A thread inside a synchronized method can call <code>wait()</code> to release the lock and move here until notified.</span></div>
+      <div class="rule-row"><span class="rule-icon">🔷</span><span><code>notify()</code> moves one arbitrary thread from the wait set back to the entry set to re-compete for the lock.</span></div>
+    </div>
+
+    <table class="compare-table">
+      <tr>
+        <th>Tool</th>
+        <th>Description</th>
+        <th>When to Use</th>
+      </tr>
+      <tr>
+        <td>synchronized</td>
+        <td>Built-in keyword; automatically acquires and releases the object's intrinsic lock.</td>
+        <td>Simple cases; cleaner, less error-prone code.</td>
+      </tr>
+      <tr>
+        <td>ReentrantLock</td>
+        <td>Explicit lock object from <code>java.util.concurrent.locks</code>. Supports fairness policies and reentrancy. Must be unlocked in a <code>finally</code> block.</td>
+        <td>When you need fairness guarantees, timed lock attempts, or multiple conditions.</td>
+      </tr>
+      <tr>
+        <td>Semaphore</td>
+        <td>Classic counting semaphore. <code>acquire()</code> and <code>release()</code>. <code>acquire()</code> throws <code>InterruptedException</code>, so use <code>finally</code> to guarantee release.</td>
+        <td>When you need to allow N threads into a section simultaneously.</td>
+      </tr>
+      <tr>
+        <td>Condition</td>
+        <td>Named condition variables created via <code>lock.newCondition()</code>. A <code>ReentrantLock</code> can have multiple, unlike the single wait set of <code>synchronized</code>.</td>
+        <td>When threads must wait for different specific conditions on the same lock.</td>
+      </tr>
+    </table>
+
+    <div class="two-col-code">
+      <div class="code-block">
+        <div class="code-header">
+          <div class="code-dots"><div class="code-dot dot-red"></div><div class="code-dot dot-yellow"></div><div class="code-dot dot-green"></div></div>
+          <span>synchronized keyword</span>
+        </div>
+        <pre><span class="kw">public synchronized void</span> <span class="fn">insert</span>(E item) {
+  <span class="cm">// lock acquired automatically</span>
+  <span class="cm">/* critical section */</span>
+  <span class="cm">// lock released automatically</span>
+}</pre>
+      </div>
+      <div class="code-block">
+        <div class="code-header">
+          <div class="code-dots"><div class="code-dot dot-red"></div><div class="code-dot dot-yellow"></div><div class="code-dot dot-green"></div></div>
+          <span>ReentrantLock</span>
+        </div>
+        <pre>ReentrantLock key = <span class="kw">new</span> <span class="fn">ReentrantLock</span>();
+
+key.<span class="fn">lock</span>();
+<span class="kw">try</span> {
+  <span class="cm">/* critical section */</span>
+} <span class="kw">finally</span> {
+  key.<span class="fn">unlock</span>(); <span class="cm">// always runs</span>
+}</pre>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-div">
+
+  <!-- 8. BEYOND LOCKS -->
+  <section class="section" id="s8">
+    <div class="section-title"><span class="num">08</span> Beyond Locks: Future Approaches</div>
+
+    <p>As core counts increase, traditional locking becomes a bottleneck and is notoriously difficult to get right. New approaches seek higher levels of abstraction.</p>
+
+    <div class="future-grid">
+      <div class="future-card">
+        <div class="f-title">Transactional Memory</div>
+        <p>Borrows from database theory. The system executes an <code>atomic { }</code> block as a transaction — either all operations succeed, or all are rolled back. <strong>Deadlock is not possible</strong> because no locks are held explicitly.</p>
+      </div>
+      <div class="future-card">
+        <div class="f-title">OpenMP</div>
+        <p>A compiler-directive-based API. Developers mark a block as <code>#pragma omp critical</code> and the <strong>compiler handles the underlying locking</strong> automatically. Simplifies protecting shared data without manual mutex management.</p>
+      </div>
+      <div class="future-card">
+        <div class="f-title">Functional Programming</div>
+        <p>Languages like Erlang and Scala disallow mutable state. If variables are <strong>immutable</strong>, race conditions and the need for locks are <strong>eliminated by design</strong> — not by runtime control.</p>
+      </div>
+    </div>
+
+    <div class="def-block">
+      <div class="def-term">Enduring Principle</div>
+      <p>While the tools and abstractions evolve — from raw semaphores to monitors, from POSIX to Java, from locks to transactional memory — the <strong>fundamental goal remains the same</strong>: ensuring correct and efficient cooperation between concurrent processes in the presence of shared state.</p>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <span>Chapter 7 · Synchronization Examples</span>
+  <span>OS Study Notes</span>
+</footer>
+
+</body>
+</html>
